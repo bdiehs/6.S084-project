@@ -21,6 +21,7 @@
 // define the constant-string tokens:
 %token SNAZZLE TYPE
 %token END ENDL
+%token HOLE HOLE_TYPE
 
 // define the "terminal symbol" token types I'm going to use (in CAPS
 // by convention), and associate each with a field of the union:
@@ -62,9 +63,9 @@ body_lines:
   | body_line
   ;
 body_line:
-  INT INT INT INT STRING ENDLS {
-      cout << "new snazzle: " << $1 << $2 << $3 << $4 << $5 << endl;
-      free($5);
+  INT INT INT INT STRING HOLE_TYPE ENDLS {
+      cout << "new snazzle: " << $1 << $2 << $3 << $4 << $5 << $6 << endl;
+      free($6);
     }
   ;
 footer:

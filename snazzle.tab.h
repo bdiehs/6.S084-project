@@ -43,9 +43,11 @@
      TYPE = 259,
      END = 260,
      ENDL = 261,
-     INT = 262,
-     FLOAT = 263,
-     STRING = 264
+     HOLE = 262,
+     HOLE_TYPE = 263,
+     INT = 264,
+     FLOAT = 265,
+     STRING = 266
    };
 #endif
 /* Tokens.  */
@@ -53,9 +55,11 @@
 #define TYPE 259
 #define END 260
 #define ENDL 261
-#define INT 262
-#define FLOAT 263
-#define STRING 264
+#define HOLE 262
+#define HOLE_TYPE 263
+#define INT 264
+#define FLOAT 265
+#define STRING 266
 
 
 
@@ -69,7 +73,7 @@ typedef union YYSTYPE
   char *sval;
 }
 /* Line 1529 of yacc.c.  */
-#line 73 "snazzle.tab.h"
+#line 77 "snazzle.tab.h"
 	YYSTYPE;
 # define yystype YYSTYPE /* obsolescent; will be withdrawn */
 # define YYSTYPE_IS_DECLARED 1
