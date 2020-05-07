@@ -95,7 +95,7 @@ class Cons():
         self.car = car
         self.cdr = cdr
     def __str__(self):
-        return "Cons " + str(self.car) + str(self.cdr)
+        return "Cons " + str(self.car) + " " +  str(self.cdr)
     def get_type(self):
         return CONS
 
@@ -119,9 +119,10 @@ class Match():
         self.match_on = match_on
         self.cases = cases
     def __str__(self):
-        result = str(self.match_on) + " match {\n"
-        for case in cases:
-            result += str(case) + "\n"
+        result = str(self.match_on) + " match {\n\t"
+        for case in self.cases[:-1]:
+            result += str(case) + "\n\t"
+        result += str(self.cases[-1]) + "\n" # don't want to tab the end curly bracket
         result += "}"
         return result
     def get_type(self):
@@ -138,7 +139,7 @@ class If():
         self.condition = condition
         self.tcase = tcase
     def __str__(self):
-        return "if (" + str(self.condition) + ") {\n" + str(self.tcase) + "\n}"
+        return "if (" + str(self.condition) + ") {\n\t" + str(self.tcase) + "\n}"
     def get_type(self):
         return IF
 
@@ -148,7 +149,7 @@ class IfElse():
         self.tcase = tcase
         self.fcase = fcase
     def __str__(self):
-        return "if (" + str(self.condition) + ") {\n" + str(self.tcase) + "\n}" + " else {\n" + fcase + "\n}"
+        return "if (" + str(self.condition) + ") {\n\t" + str(self.tcase) + "\n}" + " else {\n\t" + str(self.fcase) + "\n}"
     def get_type(self):
         return IF_ELSE
 
@@ -180,6 +181,8 @@ class Annotation():
         return ANNOTATION
 
 # TODO content and set?
+# TODO variables
 
 if __name__ == '__main__':
-    print(Choose(Tru(), Tru()))
+    # print(Choose(Annotation("r", Lst(Cons(2, Nil()))), Not(Or(Tru(), Flse()))))
+    print(Match(Lst(Nil()), [Case(Cons(0, Nil()), Flse())]))
