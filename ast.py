@@ -157,7 +157,7 @@ class Val():
         self.name = name
         self.value = value
     def __str__(self):
-        return "val " + str(name) + " = " + str(value)
+        return "val " + str(self.name) + " = " + str(self.value)
     def get_type(self):
         return VAL
 
@@ -166,7 +166,7 @@ class Choose():
         self.lhs = lhs
         self.rhs = rhs
     def __str__(self):
-        return "choose {" + "(" + str(lhs) + ")" + " => " + str(rhs) + "}"
+        return "choose {" + "(" + str(self.lhs) + ")" + " => " + str(self.rhs) + "}"
     def get_type(self):
         return CHOOSE
 
@@ -178,3 +178,8 @@ class Annotation():
         return str(self.name) + " : " + str(self.value)
     def get_type(self):
         return ANNOTATION
+
+# TODO content and set?
+
+if __name__ == '__main__':
+    print(Choose(Tru(), Tru()))
