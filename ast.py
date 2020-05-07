@@ -104,3 +104,77 @@ class Nil():
         return "Nil"
     def get_type(self):
         return NIL
+
+class Case():
+    def __init__(self, lhs, rhs):
+        self.lhs = lhs
+        self.rhs = rhs
+    def __str__(self):
+        return "case " + str(self.lhs) + " => " + str(self.rhs)
+    def get_type(self):
+        return CASE
+
+class Match():
+    def __init__(self, match_on, cases):
+        self.match_on = match_on
+        self.cases = cases
+    def __str__(self):
+        result = str(self.match_on) + " match {\n"
+        for case in cases:
+            result += str(case) + "\n"
+        result += "}"
+        return result
+    def get_type(self):
+        return MATCH
+
+class Hole():
+    def __str__(self):
+        return " ?? " # TODO figure this out. this is probably just for our debugging
+    def get_type(self):
+        return HOLE
+
+class If():
+    def __init__(self, condition, tcase):
+        self.condition = condition
+        self.tcase = tcase
+    def __str__(self):
+        return "if (" + str(self.condition) + ") {\n" + str(self.tcase) + "\n}"
+    def get_type(self):
+        return IF
+
+class IfElse():
+    def __init__(self, condition, tcase, fcase):
+        self.condition = condition
+        self.tcase = tcase
+        self.fcase = fcase
+    def __str__(self):
+        return "if (" + str(self.condition) + ") {\n" + str(self.tcase) + "\n}" + " else {\n" + fcase + "\n}"
+    def get_type(self):
+        return IF_ELSE
+
+class Val():
+    def __init__(self, name, value):
+        self.name = name
+        self.value = value
+    def __str__(self):
+        return "val " + str(name) + " = " + str(value)
+    def get_type(self):
+        return VAL
+
+class Choose():
+    def __init__(self, lhs, rhs):
+        self.lhs = lhs
+        self.rhs = rhs
+    def __str__(self):
+        return "choose {" + "(" + str(lhs) + ")" + " => " + str(rhs) + "}"
+    def get_type(self):
+        return CHOOSE
+
+class Annotation():
+    def __init__(self, name, value):
+        self.name = name
+        self.value = value
+    def __str__(self):
+        return str(self.name) + " : " + str(self.value)
+    def get_type(self):
+        return ANNOTATION
