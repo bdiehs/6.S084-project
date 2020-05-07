@@ -1,4 +1,5 @@
 INT = "INT"
+PATTERN_VALUE = "PATTERN VALUE"
 BOOL = "BOOL"
 AND = "AND"
 NOT = "NOT"
@@ -27,6 +28,16 @@ class Int():
         return INT
     # def evaluate(self):
     #     return self.value
+
+class PatternValue():
+    # I don't think we should have actual variables (this will done via Val)
+    # but we do need a thing for when we do pattern matching
+    def __init__(self, pattern_value):
+        self.pattern_value = pattern_value
+    def __str__(self):
+        return str(self.pattern_value)
+    def get_type(self):
+        return PATTERN_VALUE
 
 class Bool():
     def __init__(self, value):
@@ -181,8 +192,7 @@ class Annotation():
         return ANNOTATION
 
 # TODO content and set?
-# TODO variables
 
 if __name__ == '__main__':
     # print(Choose(Annotation("r", Lst(Cons(2, Nil()))), Not(Or(Tru(), Flse()))))
-    print(Match(Lst(Nil()), [Case(Cons(0, Nil()), Flse())]))
+    print(Match(Lst(Nil()), [Case(Cons(PatternValue("h"), Nil()), Flse())]))
