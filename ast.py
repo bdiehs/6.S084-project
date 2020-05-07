@@ -81,3 +81,26 @@ class Tru():
         return "true"
     def get_type(self):
         return TRUE
+
+class Lst():
+    def __init__(self, value):
+        self.value = value # Cons or Nil
+    def __str__(self):
+        return str(self.value)
+    def get_type(self):
+        return LIST
+
+class Cons():
+    def __init__(self, car, cdr):
+        self.car = car
+        self.cdr = cdr
+    def __str__(self):
+        return "Cons " + str(self.car) + str(self.cdr)
+    def get_type(self):
+        return CONS
+
+class Nil():
+    def __str__(self):
+        return "Nil"
+    def get_type(self):
+        return NIL
