@@ -71,14 +71,20 @@ LIST = TList()
 BOOL = TBool()
 SET = TSet(INT)
 
-
+class Var():
+    def __init__(self, name):
+        self.name = name
+    def __str__(self):
+        return self.name
+    def get_type(self, envt):
+        return envt[name].get_type()
 
 class Int():
     def __init__(self, value):
         self.value = value
     def __str__(self):
         return str(self.value)
-    def get_type(self):
+    def get_type(self, envt):
         return INT
     # def evaluate(self):
     #     return self.value
@@ -89,7 +95,7 @@ class Plus():
         self.right = right
     def __str__(self):
         return "(" + str(self.left) + ")" + " + " + "(" + str(self.right) + ")"
-    def get_type(self):
+    def get_type(self, envt):
         return INT
 
 class Minus():
@@ -98,7 +104,7 @@ class Minus():
         self.right = right
     def __str__(self):
         return "(" + str(self.left) + ")" + " - " + "(" + str(self.right) + ")"
-    def get_type(self):
+    def get_type(self, envt):
         return INT
 
 class Leq():
@@ -107,7 +113,7 @@ class Leq():
         self.right = right
     def __str__(self):
         return "(" + str(self.left) + ")" + " <= " + "(" + str(self.right) + ")"
-    def get_type(self):
+    def get_type(self, envt):
         return BOOL
 
 class Eq():
@@ -116,7 +122,7 @@ class Eq():
         self.right = right
     def __str__(self):
         return "(" + str(self.left) + ")" + " == " + "(" + str(self.right) + ")"
-    def get_type(self):
+    def get_type(self, envt):
         return BOOL
 
 # class PatternValue():
@@ -126,7 +132,7 @@ class Eq():
 #         self.pattern_value = pattern_value
 #     def __str__(self):
 #         return str(self.pattern_value)
-#     def get_type(self):
+#     def get_type(self, envt):
 #         return PATTERN_VALUE
 
 class Bool():
@@ -134,7 +140,7 @@ class Bool():
         self.value = value
     def __str__(self):
         return "true" if self.value else "false"
-    def get_type(self):
+    def get_type(self, envt):
         return BOOL
     # def evaluate(self):
     #     return self.value
@@ -145,7 +151,7 @@ class And():
         self.right = right
     def __str__(self):
         return "(" + str(self.left) + ")" + " && " + "(" + str(self.right) + ")"
-    def get_type(self):
+    def get_type(self, envt):
         return BOOL
     # def evaluate(self, environment):
     #     return self.left.evaluate(environment) and self.right.evaluate(environment)
@@ -156,7 +162,7 @@ class Or():
         self.right = right
     def __str__(self):
         return "(" + str(self.left) + ")" + " || " + "(" + str(self.right) + ")"
-    def get_type(self):
+    def get_type(self, envt):
         return BOOL
 
 class Not():
@@ -164,7 +170,7 @@ class Not():
         self.child = child
     def __str__(self):
         return "!" + "(" + str(self.child) + ")"
-    def get_type(self):
+    def get_type(self, envt):
         return BOOL
 
 class Flse():
@@ -172,7 +178,7 @@ class Flse():
         self.value = False
     def __str__(self):
         return "false"
-    def get_type(self):
+    def get_type(self, envt):
         return BOOL
 
 class Tru():
@@ -180,7 +186,7 @@ class Tru():
         self.value = True
     def __str__(self):
         return "true"
-    def get_type(self):
+    def get_type(self, envt):
         return BOOL
 
 # class Lst():
@@ -188,7 +194,7 @@ class Tru():
 #         self.value = value # Cons or Nil
 #     def __str__(self):
 #         return str(self.value)
-#     def get_type(self):
+#     def get_type(self, envt):
 #         return LIST
 
 class Cons():
@@ -197,13 +203,15 @@ class Cons():
         self.cdr = cdr
     def __str__(self):
         return "Cons " + str(self.car) + " " +  str(self.cdr)
-    def get_type(self):
+    def get_type(self, envt):
         return LIST
 
 class Nil():
+    def __init__(self):
+        pass
     def __str__(self):
         return "Nil"
-    def get_type(self):
+    def get_type(self, envt):
         return LIST
 
 # class Case():
@@ -212,22 +220,23 @@ class Nil():
 #         self.rhs = rhs
 #     def __str__(self):
 #         return "case " + str(self.lhs) + " => " + str(self.rhs)
-#     def get_type(self):
+#     def get_type(self, envt):
 #         return CASE
 
 class Match():
-    def __init__(self, match_on, cases):
+    def __init__(self, match_on, nil_case, cons_vars, cons_case):
         self.match_on = match_on
-        self.cases = cases
+        self.nil_case = nil_case
+        self.cons_vars = cons_vars
+        self.cons_case = cons_case
     def __str__(self):
         result = str(self.match_on) + " match {\n\t"
-        for case in self.cases[:-1]:
-            result += str(case) + "\n\t"
-        result += str(self.cases[-1]) + "\n" # don't want to tab the end curly bracket
-        result += "}"
+        result += "case Nil => " + str(self.nil_case) + "\n\t"
+        result += "case Cons(" + self.cons_vars[0] + ", " + self.cons_vars[1] + ") => \n\t\t" + str(self.cons_case)
+        result += "\n}"
         return result
-    def get_type(self):
-        return MATCH
+    def get_type(self, envt):
+        return TArrow(match_on.get_type(), nil_case.get_type())
 
 class Hole():
 
@@ -235,16 +244,15 @@ class Hole():
         self.type = type_
     def __str__(self):
         return " ?? " # TODO figure this out. this is probably just for our debugging
-    def get_type(self):
+    def get_type(self, envt):
         return self.type
-
 
 class St():
     def __init__(self, vals):
         self.vals = vals # Cons or Nil
     def __str__(self):
         return str(self.value)
-    def get_type(self):
+    def get_type(self, envt):
         return SET
 
 class StPlus():
@@ -253,27 +261,21 @@ class StPlus():
         self.right = right
     def __str__(self):
         return "(" + str(self.left) + ")" + " ++ " + "(" + str(self.right) + ")"
-    def get_type(self):
+    def get_type(self, envt):
         return SET
 
-class Abs():
-    def __init__(self, var_types, ret_type, vars_, body):
+class Func():
+    def __init__(self, name, var_types, ret_type, vars_, body):
+        self.name = name
         self.vars = vars_
         self.var_types = var_types
         self.ret_type = ret_type
         self.body = body
     def __str__(self):
-        return 'func' + self.vars + ": " + str(var_types) + ' = ' + str(body)
-    def get_type(self):
+        return 'func' + str(self.vars) + ": " + str(self.var_types) + ' = ' + str(self.body)
+    def get_type(self, envt):
         return TArrow(var_types, ret_type)
 
-class This():
-    def __init__(self, type_):
-        self.type = type_
-    def __str__(self):
-        return 'this'
-    def get_type(self):
-        return self.type
 
 class App():
     def __init__(self, func, args):
@@ -281,16 +283,36 @@ class App():
         self.args = args
     def __str__(self):
         return str(self.func) + "(" + str(self.args) + ")"
-    def get_type(self):
-        return get_type(self.func).to_
+    def get_type(self, envt):
+        return self.func.get_type().to_
+
+class LetIn():
+    def __init__(self, var_name, val, body):
+        self.var_name = var_name
+        self.val = val
+        self.body = body
+
+    def __str__(self):
+        return 'val ' self.var_name + ' = ' + str(val) + '\n' + str(body)
+    def get_type(self, envt):
+        return self.body.get_type(envt)
 
 class Tuple():
     def __init__(self, vals):
         self.vals = vals
     def __str__(self):
         return str(vals)
-    def get_type(self):
-        return TTuple([get_type(val) for val in self.vals])
+    def get_type(self, envt):
+        return TTuple([val.get_type() for val in self.vals])
+
+class TupleAcc():
+    def __init__(self, tup, idx):
+        self.tuple = tup
+        self.idx = idx
+    def __str__(self):
+        return str(self.tuple) + '[' + str(self.idx) + ']'
+    def get_type(self, envt):
+        return self.tuple.get_type()[self.idx]
 
 class Harness():
     def __init__(self, return_type, name, choose_cond, body):
@@ -300,13 +322,39 @@ class Harness():
         self.body = body
     def __str__(self):
         return str(self.func) + "(" + str(self.args) + ")"
-    def get_type(self):
-        return get_type(self.func).to_
+    def get_type(self, envt):
+        return self.func.get_type().to_
 
 
 # TODO content and set?
 
 if __name__ == '__main__':
+    size = Func('size', [LIST], INT, ['lst'], 
+        Match(Var('lst'),
+            Int(0),
+            ['_', 'rest'], Plus(Int(1), App(Var('size'), [Var('rest')]))
+        )
+    )
+    content = Func('content', [LIST], INT, ['lst'],
+        Match(Var('lst'),
+            Set([]),
+            ['e', 'rest'], StPlus(St(['e']), App(Var('content'), [Var('rest')]))
+            )
+    )
+    # split0 = Func('split', [LIST], Tuple([LIST, LIST]), ['lst'],
+    #     Func('_', [Tuple(LIST, LIST)], BOOL, ['r'],
+    #         Eq(App(Var('content'), Var('lst')), StPlus(App(Var('content'), TupleAcc(Var('r'), 0)), App(Var('content'), TupleAcc(Var('r'), 1)))))
+    #     Match(Var('lst'),
+    #         Tuple([Nil(), Nil()]),
+    #         ['h', 't'], Match(Var('t'),
+    #             Tuple([Nil(), Cons(Var('h'), Nil())])
+    #             ['h2', 't2'],
+    #         )
+    #     )
+
+    # )
+
+    print(size)
     pass
     # print(Choose(Annotation("r", Lst(Cons(2, Nil()))), Not(Or(Tru(), Flse()))))
     # print(Match(Lst(Nil()), [Case(Cons(PatternValue("h"), Nil()), Flse())]))
