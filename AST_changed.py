@@ -24,6 +24,9 @@
 # # ANNOTATION = "ANNOTATION"
 # SET = "SET"
 
+def list_str(l):
+    return ', '.join([str(e) for e in l])
+
 class Type:
     def __init__(self):
         raise Exception('')
@@ -63,7 +66,7 @@ class TTuple(Type):
     def __init__(self, types):
         self.types = types
     def __str__(self):
-        return "TUPLE" + types
+        return "TUPLE(" + list_str(self.types) + ')'
 
 
 INT = TInt()
@@ -272,7 +275,7 @@ class Func():
         self.ret_type = ret_type
         self.body = body
     def __str__(self):
-        return 'func' + str(self.vars) + ": " + str(self.var_types) + ' = ' + str(self.body)
+        return 'func' + list_str(self.vars) + ": " + list_str(self.var_types) + ' = ' + str(self.body)
     def get_type(self, envt):
         return TArrow(var_types, ret_type)
 
@@ -282,7 +285,7 @@ class App():
         self.func = func
         self.args = args
     def __str__(self):
-        return str(self.func) + "(" + str(self.args) + ")"
+        return str(self.func) + "(" + list_str(self.args) + ")"
     def get_type(self, envt):
         return self.func.get_type().to_
 
@@ -293,7 +296,7 @@ class LetIn():
         self.body = body
 
     def __str__(self):
-        return 'val ' self.var_name + ' = ' + str(val) + '\n' + str(body)
+        return 'val ' + self.var_name + ' = ' + str(self.val) + '\n' + str(self.body)
     def get_type(self, envt):
         return self.body.get_type(envt)
 
@@ -301,7 +304,7 @@ class Tuple():
     def __init__(self, vals):
         self.vals = vals
     def __str__(self):
-        return str(vals)
+        return list_str(self.vals)
     def get_type(self, envt):
         return TTuple([val.get_type() for val in self.vals])
 
@@ -315,18 +318,24 @@ class TupleAcc():
         return self.tuple.get_type()[self.idx]
 
 class Harness():
-    def __init__(self, return_type, name, choose_cond, body):
-        self.ret_type = return_type
+    def __init__(self, name, var_types, ret_type, vars_, choose_cond, body):
         self.name = name
+        self.vars = vars_
+        self.var_types = var_types
+        self.ret_type = ret_type
         self.choose_cond = choose_cond
         self.body = body
     def __str__(self):
-        return str(self.func) + "(" + str(self.args) + ")"
+        return 'harness ' + list_str(self.vars) + ": " + list_str(self.var_types) + ' = ' + str(self.body)
     def get_type(self, envt):
         return self.func.get_type().to_
 
 
-# TODO content and set?
+
+
+
+
+
 
 if __name__ == '__main__':
     size = Func('size', [LIST], INT, ['lst'], 
@@ -337,24 +346,26 @@ if __name__ == '__main__':
     )
     content = Func('content', [LIST], INT, ['lst'],
         Match(Var('lst'),
-            Set([]),
+            St([]),
             ['e', 'rest'], StPlus(St(['e']), App(Var('content'), [Var('rest')]))
             )
     )
-    # split0 = Func('split', [LIST], Tuple([LIST, LIST]), ['lst'],
-    #     Func('_', [Tuple(LIST, LIST)], BOOL, ['r'],
-    #         Eq(App(Var('content'), Var('lst')), StPlus(App(Var('content'), TupleAcc(Var('r'), 0)), App(Var('content'), TupleAcc(Var('r'), 1)))))
-    #     Match(Var('lst'),
-    #         Tuple([Nil(), Nil()]),
-    #         ['h', 't'], Match(Var('t'),
-    #             Tuple([Nil(), Cons(Var('h'), Nil())])
-    #             ['h2', 't2'],
-    #         )
-    #     )
+    split0 = Harness('split', [LIST], TTuple([LIST, LIST]), ['lst'],
+        Func('_', [TTuple([LIST, LIST])], BOOL, ['r'],
+            Eq(App(Var('content'), Var('lst')), StPlus(App(Var('content'), TupleAcc(Var('r'), 0)), App(Var('content'), TupleAcc(Var('r'), 1))))),
+        Match(Var('lst'),
+            Tuple([Nil(), Nil()]),
+            ['h', 't'], Match(Var('t'),
+                Tuple([Nil(), Cons(Var('h'), Nil())]),
+                ['h2', 't2'],
+                LetIn('v', App(Var('split'), [Var('t2')]),
+                    Tuple([Cons(Var('h1'), TupleAcc(Var('r'), 1)), Cons(Var('h2'), TupleAcc(Var('r'), 2))])
+                )
+            )
+        )
+    )
 
-    # )
-
-    print(size)
+    print(split0)
     pass
     # print(Choose(Annotation("r", Lst(Cons(2, Nil()))), Not(Or(Tru(), Flse()))))
     # print(Match(Lst(Nil()), [Case(Cons(PatternValue("h"), Nil()), Flse())]))
