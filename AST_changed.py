@@ -283,7 +283,7 @@ class St():
     def __init__(self, vals):
         self.vals = vals # Cons or Nil
     def __str__(self):
-        return str(self.value)
+        return str(self.vals)
     def get_type(self, envt):
         return SET
 
@@ -317,7 +317,7 @@ class Func():
         tabbed_body = ""
         for line in body_lines[:-1]:
             tabbed_body += SCALA_TAB + line + "\n"
-        tabbed_body += SCALA_TAB + body_lines[-1] 
+        tabbed_body += SCALA_TAB + body_lines[-1]
         return tabbed_body
 
     def __str__(self):
@@ -339,6 +339,7 @@ class App():
         return self.func.get_type().to_
 
 class LetIn():
+    # val assignment followed by body
     def __init__(self, var_name, val, body):
         self.var_name = var_name
         self.val = val
@@ -366,7 +367,7 @@ class TupleAcc():
     def get_type(self, envt):
         return self.tuple.get_type()[self.idx]
 
-class Harness():
+class Harness(Func):
     def __init__(self, name, var_types, ret_type, vars_, choose_cond, body):
         self.name = name
         self.vars = vars_
@@ -375,7 +376,16 @@ class Harness():
         self.choose_cond = choose_cond
         self.body = body
     def __str__(self):
+        # isn't harness not a thing in Leon? why do we have a harness?
+        # is this for our own use (like functions that aren't Harnesses, we won't search for holes and will just pretty print)?
+        # anyway I'm changing this to like function
+        # I don't think we want the keyword harness in the string
+        # TODO figure out: are there two sets of curly brackets, one for choose, one for body? or one whole thing?
+        # would it be one big choose with the body in it, and holes in teh body => the post condition? my best guess
+        # I think we should discuss this so I'm going to leave it for now
+
         return 'harness ' + list_str(self.vars) + ": " + list_str(self.var_types) + ' = ' + str(self.body)
+        # return "def " + self.name + " (" + self._get_function_arguments() + ") " + ": " + str(self.ret_type) + ' = ' + str(self.choose_cond) + self._add_tabs_body() + "\n}"
     def get_type(self, envt):
         return self.func.get_type().to_
 
@@ -387,34 +397,34 @@ class Harness():
 
 
 if __name__ == '__main__':
-    size = Func('size', [LIST, INT], INT, ['lst', Int(0)],
-        Match(Var('lst'),
-            Int(0),
-            ['_', 'rest'], Plus(Int(1), App(Var('size'), [Var('rest')]))
-        )
-    )
+    # size = Func('size', [LIST, INT], INT, ['lst', Int(0)],
+    #     Match(Var('lst'),
+    #         Int(0),
+    #         ['_', 'rest'], Plus(Int(1), App(Var('size'), [Var('rest')]))
+    #     )
+    # )
     # content = Func('content', [LIST], INT, ['lst'],
     #     Match(Var('lst'),
     #         St([]),
     #         ['e', 'rest'], StPlus(St(['e']), App(Var('content'), [Var('rest')]))
     #         )
     # )
-    # split0 = Harness('split', [LIST], TTuple([LIST, LIST]), ['lst'],
-    #     Func('_', [TTuple([LIST, LIST])], BOOL, ['r'],
-    #         Eq(App(Var('content'), Var('lst')), StPlus(App(Var('content'), TupleAcc(Var('r'), 0)), App(Var('content'), TupleAcc(Var('r'), 1))))),
-    #     Match(Var('lst'),
-    #         Tuple([Nil(), Nil()]),
-    #         ['h', 't'], Match(Var('t'),
-    #             Tuple([Nil(), Cons(Var('h'), Nil())]),
-    #             ['h2', 't2'],
-    #             LetIn('v', App(Var('split'), [Var('t2')]),
-    #                 Tuple([Cons(Var('h1'), TupleAcc(Var('r'), 1)), Cons(Var('h2'), TupleAcc(Var('r'), 2))])
-    #             )
-    #         )
-    #     )
-    # )
+    split0 = Harness('split', [LIST], TTuple([LIST, LIST]), ['lst'],
+        Func('_', [TTuple([LIST, LIST])], BOOL, ['r'],
+            Eq(App(Var('content'), Var('lst')), StPlus(App(Var('content'), TupleAcc(Var('r'), 0)), App(Var('content'), TupleAcc(Var('r'), 1))))),
+        Match(Var('lst'),
+            Tuple([Nil(), Nil()]),
+            ['h', 't'], Match(Var('t'),
+                Tuple([Nil(), Cons(Var('h'), Nil())]),
+                ['h2', 't2'],
+                LetIn('v', App(Var('split'), [Var('t2')]),
+                    Tuple([Cons(Var('h1'), TupleAcc(Var('r'), 1)), Cons(Var('h2'), TupleAcc(Var('r'), 2))])
+                )
+            )
+        )
+    )
 
-    print(size)
+    print(split0)
     pass
     # print(Choose(Annotation("r", Lst(Cons(2, Nil()))), Not(Or(Tru(), Flse()))))
     # print(Match(Lst(Nil()), [Case(Cons(PatternValue("h"), Nil()), Flse())]))
