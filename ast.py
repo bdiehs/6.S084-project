@@ -100,8 +100,14 @@ class Empty():
         return "()" # just for debugging
     def get_type(self):
         return EMPTY # just for debugging
+    def is_empty(self):
+        return True
 
-class Var():
+class NonEmpty():
+    def is_empty(self):
+        return False
+
+class Var(NonEmpty):
     # I know we have the problem of variables that are inputs in functions,
     # but I think there's cases where it makes more sense for a Var to have a name and a value
     # and then the value is its own node and has a type
@@ -119,26 +125,24 @@ class Var():
     def prune(self, variables):
         return Empty() if self.name not in variables else self
 
-class Int():
+class Int(NonEmpty):
     def __init__(self, value):
         self.value = value
     def __str__(self):
         return str(self.value)
     def get_type(self, envt):
         return INT
-    # def evaluate(self):
-    #     return self.value
     def prune(self, variables):
         return self
 
-class ArithmeticOperation():
+class ArithmeticOperation(NonEmpty):
     def __init__(self, left, right):
         self.left = left
         self.right = right
     def prune(self, variables):
         new_left = self.left.prune(variables)
         new_right = self.right.prune(variables)
-        if new_left.get_type() == EMPTY or new_right.get_type() == EMPTY:
+        if new_left.is_empty() or new_right.is_empty():
             return Empty()
         return self
 
@@ -182,7 +186,7 @@ class Eq(ArithmeticOperation):
 #     def get_type(self, envt):
 #         return PATTERN_VALUE
 
-class Bool():
+class Bool(NonEmpty):
     def __init__(self, value):
         self.value = value
     def __str__(self):
@@ -194,7 +198,7 @@ class Bool():
     def prune(self, variables):
         return self
 
-class TwoBooleanOperation():
+class TwoBooleanOperation(NonEmpty):
     def __init__(self, left, right):
         self.left = left
         self.right = right
@@ -205,11 +209,11 @@ class TwoBooleanOperation():
         # if either left or right is empty, truth value becomes the other one
         new_right = self.right.prune()
         new_left = self.left.prune()
-        if new_right.get_type() != EMPTY and new_left.get_type() != EMPTY:
+        if (not new_right.is_empty()) and (not new_left.is_empty()):
             return self
-        if new_right.get_type() == EMPTY and new_left.get_type() == EMPTY:
+        if new_right.is_empty() and new_left.is_empty():
             return Empty()
-        return new_left if new_right.get_type() == EMPTY else new_right
+        return new_left if new_right.is_empty() else new_right
 
 class And(TwoBooleanOperation):
     def __str__(self):
@@ -219,7 +223,7 @@ class Or(TwoBooleanOperation):
     def __str__(self):
         return "(" + str(self.left) + ")" + " || " + "(" + str(self.right) + ")"
 
-class Not():
+class Not(NonEmpty):
     def __init__(self, child):
         self.child = child
     def __str__(self):
@@ -228,9 +232,9 @@ class Not():
         return BOOL
     def prune(self, variables):
         child_pruned = self.child.prune(variables)
-        return child_pruned if child_pruned.get_type() == EMPTY else self
+        return child_pruned if child_pruned.is_empty() else self
 
-class Flse():
+class Flse(NonEmpty):
     def __init__(self):
         self.value = False
     def __str__(self):
@@ -240,7 +244,7 @@ class Flse():
     def prune(self, variables):
         return self
 
-class Tru():
+class Tru(NonEmpty):
     def __init__(self):
         self.value = True
     def __str__(self):
@@ -251,7 +255,7 @@ class Tru():
         return self
 
 # I think we do need a list type. Leon has a list type.
-class Lst():
+class Lst(NonEmpty):
     def __init__(self, value):
         self.value = value # Cons or Nil
     def __str__(self):
@@ -259,7 +263,7 @@ class Lst():
     def get_type(self, envt):
         return LIST
 
-class Cons():
+class Cons(NonEmpty):
     def __init__(self, car, cdr):
         self.car = car
         self.cdr = cdr
@@ -268,7 +272,7 @@ class Cons():
     def get_type(self, envt):
         return LIST
 
-class Nil():
+class Nil(NonEmpty):
     def __init__(self):
         pass
     def __str__(self):
@@ -276,7 +280,7 @@ class Nil():
     def get_type(self, envt):
         return LIST
 
-class Match():
+class Match(NonEmpty):
     # I guess if the only thing we ever want to match on is lists, this is fine
     def __init__(self, match_on, nil_case, cons_vars, cons_case):
         self.match_on = match_on
@@ -293,7 +297,7 @@ class Match():
     def get_type(self, envt):
         return TArrow(match_on.get_type(), nil_case.get_type())
 
-class Hole():
+class Hole(NonEmpty):
     def __init__(self, type_):
         self.type = type_
     def __str__(self):
@@ -301,7 +305,7 @@ class Hole():
     def get_type(self, envt):
         return self.type
 
-class St():
+class St(NonEmpty):
     def __init__(self, vals):
         self.vals = vals # Cons or Nil
     def __str__(self):
@@ -309,7 +313,7 @@ class St():
     def get_type(self, envt):
         return SET
 
-class StPlus():
+class StPlus(NonEmpty):
     def __init__(self, left, right):
         self.left = left
         self.right = right
@@ -318,7 +322,7 @@ class StPlus():
     def get_type(self, envt):
         return SET
 
-class Func():
+class Func(NonEmpty):
     def __init__(self, name, var_types, ret_type, vars_, body):
         self.name = name
         self.vars = vars_
@@ -364,7 +368,7 @@ class Func():
     def get_call(self, variables):
         return CallFunc(self.name, variables, self.ret_type)
 
-class CallFunc():
+class CallFunc(NonEmpty):
     # a call to a function
     # uses specific variable names for the call, not the argument names
     def __init__(self, name, vars_, ret_type):
@@ -384,7 +388,7 @@ class CallFunc():
                 return Empty()
         return self
 
-class App():
+class App(NonEmpty):
     def __init__(self, func, args):
         self.func = func
         self.args = args
@@ -393,7 +397,7 @@ class App():
     def get_type(self, envt):
         return self.func.get_type().to_
 
-class LetIn():
+class LetIn(NonEmpty):
     # val assignment followed by body
     def __init__(self, var_name, val, body):
         self.var_name = var_name
@@ -405,7 +409,7 @@ class LetIn():
     def get_type(self, envt):
         return self.body.get_type(envt)
 
-class Tuple():
+class Tuple(NonEmpty):
     def __init__(self, vals):
         self.vals = vals
     def __str__(self):
@@ -413,7 +417,7 @@ class Tuple():
     def get_type(self, envt):
         return TTuple([val.get_type() for val in self.vals])
 
-class TupleAcc():
+class TupleAcc(NonEmpty):
     def __init__(self, tup, idx):
         self.tuple = tup
         self.idx = idx
@@ -422,7 +426,7 @@ class TupleAcc():
     def get_type(self, envt):
         return self.tuple.get_type()[self.idx]
 
-class Choose():
+class Choose(NonEmpty):
     def __init__(self, lhs, rhs):
         self.lhs = lhs
         self.rhs = rhs
@@ -430,6 +434,8 @@ class Choose():
         return self.lhs
     def get_rhs(self):
         return self.rhs
+    def set_rhs(self, rhs):
+        self.rhs = rhs
     def __str__(self):
         return str(self.lhs) + " => " + str(self.rhs)
     def get_type(self):
@@ -444,6 +450,8 @@ class Harness(Func):
         self.ret_type = ret_type
         self.choose_cond = choose_cond # TODO we need to prune variables that are from outer calls
         self.body = body
+    def get_choose_cond(self):
+        return self.choose_cond
     def __str__(self):
         # isn't harness not a thing in Leon? why do we have a harness?
         # is this for our own use (like functions that aren't Harnesses, we won't search for holes and will just pretty print)?
@@ -457,14 +465,15 @@ class Harness(Func):
         # return "def " + self.name + " (" + self._get_function_arguments() + ") " + ": " + str(self.ret_type) + ' = ' + str(self.choose_cond) + self._add_tabs_body() + "\n}"
     def prune(self):
         # need to update the choose RHS
-        # how to know if something is not in scope?????
         # use the variables that all the way to the left, the arguments to the function
         # check if there are variables used in instances of CallFunc in self.rhs
         #   that are not in self.vars
         #   if so, remove the lowest ast node involving those variable(s)
-        # if self.choose_cond.get_rhs().get_type ==
-
-        pass
+        rhs_pruned = self.choose_cond.get_rhs().prune(self.vars)
+        if rhs_pruned.is_empty():
+            self.choose_cond.set_rhs(Tru())
+        else:
+            self.choose_cond.set_rhs(rhs_pruned)
     def get_type(self, envt):
         return self.func.get_type().to_
 
@@ -476,34 +485,38 @@ class Harness(Func):
 
 
 if __name__ == '__main__':
-    # size = Func('size', [LIST, INT], INT, ['lst', Int(0)],
-    #     Match(Var('lst'),
-    #         Int(0),
-    #         ['_', 'rest'], Plus(Int(1), App(Var('size'), [Var('rest')]))
-    #     )
-    # )
+    size = Func('size', [LIST, INT], INT, ['lst', Int(0)],
+        Match(Var('lst'),
+            Int(0),
+            ['_', 'rest'], Plus(Int(1), App(Var('size'), [Var('rest')]))
+        )
+    )
     # content = Func('content', [LIST], INT, ['lst'],
     #     Match(Var('lst'),
     #         St([]),
     #         ['e', 'rest'], StPlus(St(['e']), App(Var('content'), [Var('rest')]))
     #         )
     # )
-    split0 = Harness('split', [LIST], TTuple([LIST, LIST]), ['lst'],
-        Func('_', [TTuple([LIST, LIST])], BOOL, ['r'],
-            Eq(App(Var('content'), Var('lst')), StPlus(App(Var('content'), TupleAcc(Var('r'), 0)), App(Var('content'), TupleAcc(Var('r'), 1))))),
-        Match(Var('lst'),
-            Tuple([Nil(), Nil()]),
-            ['h', 't'], Match(Var('t'),
-                Tuple([Nil(), Cons(Var('h'), Nil())]),
-                ['h2', 't2'],
-                LetIn('v', App(Var('split'), [Var('t2')]),
-                    Tuple([Cons(Var('h1'), TupleAcc(Var('r'), 1)), Cons(Var('h2'), TupleAcc(Var('r'), 2))])
-                )
-            )
-        )
-    )
+    # split0 = Harness('split', [LIST], TTuple([LIST, LIST]), ['lst'],
+    #     Func('_', [TTuple([LIST, LIST])], BOOL, ['r'],
+    #         Eq(App(Var('content'), Var('lst')), StPlus(App(Var('content'), TupleAcc(Var('r'), 0)), App(Var('content'), TupleAcc(Var('r'), 1))))),
+    #     Match(Var('lst'),
+    #         Tuple([Nil(), Nil()]),
+    #         ['h', 't'], Match(Var('t'),
+    #             Tuple([Nil(), Cons(Var('h'), Nil())]),
+    #             ['h2', 't2'],
+    #             LetIn('v', App(Var('split'), [Var('t2')]),
+    #                 Tuple([Cons(Var('h1'), TupleAcc(Var('r'), 1)), Cons(Var('h2'), TupleAcc(Var('r'), 2))])
+    #             )
+    #         )
+    #     )
+    # )
+    old_choose = Choose(Flse(), Lt(size.get_call(["lst_B"]), size.get_call(["lst_A"])))
+    harness =  Harness("split", [LIST], INT, ["lst_B"], old_choose, Tru())
+    harness.prune()
+    print(harness.get_choose_cond())
 
-    print(split0)
+
     pass
     # print(Choose(Annotation("r", Lst(Cons(2, Nil()))), Not(Or(Tru(), Flse()))))
     # print(Match(Lst(Nil()), [Case(Cons(PatternValue("h"), Nil()), Flse())]))
