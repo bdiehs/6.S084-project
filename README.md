@@ -32,3 +32,14 @@ and run `sudo make install`.
 
 To use the wrapper, which is the faster option, run with `--solvers=smt-z3`. For example, 
 `./leon --solvers=smt-z3 ./testcases/verification/datastructures/RedBlackTree.scala`.
+
+If when trying to run Leon, you see a warning: 
+
+`[Warning ] The Z3 native interface is not available, falling back to smt-z3.`
+
+it means the faster wrapper isn't connected properly (message me!). If it hangs for a long time at the first line, something like 
+
+`Now considering 'match exhaustiveness' VC for content @17:37...`
+
+this is not a good sign. 
+
