@@ -24,6 +24,8 @@
 # # ANNOTATION = "ANNOTATION"
 # SET = "SET"
 
+SCALA_TAB = "  "
+
 def list_str(l):
     return ', '.join([str(e) for e in l])
 
@@ -101,7 +103,7 @@ class Var():
         self.name = name
         # self.value = value
     def __str__(self):
-        return "var " + self.name #+ " = " + str(self.value)
+        return self.name #+ " = " + str(self.value)
     def get_type(self, envt):
         return envt[name].get_type()
     # def get_type(self):
@@ -260,9 +262,10 @@ class Match():
         self.cons_vars = cons_vars
         self.cons_case = cons_case
     def __str__(self):
-        result = str(self.match_on) + " match {\n\t"
-        result += "case Nil => " + str(self.nil_case) + "\n\t"
-        result += "case Cons(" + self.cons_vars[0] + ", " + self.cons_vars[1] + ") => \n\t\t" + str(self.cons_case)
+        # replacing tabs with two spaces each
+        result = str(self.match_on) + " match {\n" + SCALA_TAB
+        result += "case Nil => " + str(self.nil_case) + "\n" + SCALA_TAB
+        result += "case Cons(" + self.cons_vars[0] + ", " + self.cons_vars[1] + ") => \n" + SCALA_TAB*2 + str(self.cons_case)
         result += "\n}"
         return result
     def get_type(self, envt):
@@ -313,8 +316,8 @@ class Func():
     def __str__(self):
         # this has a bug, multiple parameters won't be next to their type
         # also, shouldn't this get pretty printed the way scala expects it, like with scala types like List instead of LIST etc?
-
-        return 'def ' + self.name + " (" + self._get_function_arguments() + ") " + ": " + str(self.ret_type) + ' = ' + str(self.body)
+        # also self.body doesn't look right...
+        return 'def ' + self.name + " (" + self._get_function_arguments() + ") " + ": " + str(self.ret_type) + ' = {\n' + str(self.body) + "\n}"
     def get_type(self, envt):
         return TArrow(var_types, ret_type)
 
