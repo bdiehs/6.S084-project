@@ -25,6 +25,7 @@
 # SET = "SET"
 
 SCALA_TAB = "  "
+EMPTY = "EMPTY"
 
 def list_str(l):
     return ', '.join([str(e) for e in l])
@@ -93,6 +94,13 @@ LIST = TList()
 BOOL = TBool()
 SET = TSet(INT)
 
+class Empty():
+    # the empty node. nodes may become empty after pruning
+    def __str__(self):
+        return "()" # just for debugging
+    def get_type(self):
+        return EMPTY # just for debugging
+
 class Var():
     # I know we have the problem of variables that are inputs in functions,
     # but I think there's cases where it makes more sense for a Var to have a name and a value
@@ -108,6 +116,8 @@ class Var():
         return envt[name].get_type()
     # def get_type(self):
     #     return self.value.get_type()
+    def prune(self, variables):
+        return Empty() if self.name not in variables else self
 
 class Int():
     def __init__(self, value):
@@ -118,47 +128,45 @@ class Int():
         return INT
     # def evaluate(self):
     #     return self.value
+    def prune(self, variables):
+        return self
 
-class Plus():
+class ArithmeticOperation():
     def __init__(self, left, right):
         self.left = left
         self.right = right
+    def prune(self, variables):
+        new_left = self.left.prune(variables)
+        new_right = self.right.prune(variables)
+        if new_left.get_type() == EMPTY or new_right.get_type() == EMPTY:
+            return Empty()
+        return self
+
+class Plus(ArithmeticOperation):
     def __str__(self):
         return "(" + str(self.left) + ")" + " + " + "(" + str(self.right) + ")"
     def get_type(self, envt):
         return INT
 
-class Minus():
-    def __init__(self, left, right):
-        self.left = left
-        self.right = right
+class Minus(ArithmeticOperation):
     def __str__(self):
         return "(" + str(self.left) + ")" + " - " + "(" + str(self.right) + ")"
     def get_type(self, envt):
         return INT
 
-class Lt():
-    def __init__(self, left, right):
-        self.left = left
-        self.right = right
+class Lt(ArithmeticOperation):
     def __str__(self):
         return "(" + str(self.left) + ")" + " < " + "(" + str(self.right) + ")"
     def get_type(self, envt):
         return BOOL
 
-class Leq():
-    def __init__(self, left, right):
-        self.left = left
-        self.right = right
+class Leq(ArithmeticOperation):
     def __str__(self):
         return "(" + str(self.left) + ")" + " <= " + "(" + str(self.right) + ")"
     def get_type(self, envt):
         return BOOL
 
-class Eq():
-    def __init__(self, left, right):
-        self.left = left
-        self.right = right
+class Eq(ArithmeticOperation):
     def __str__(self):
         return "(" + str(self.left) + ")" + " == " + "(" + str(self.right) + ")"
     def get_type(self, envt):
@@ -183,26 +191,33 @@ class Bool():
         return BOOL
     # def evaluate(self):
     #     return self.value
+    def prune(self, variables):
+        return self
 
-class And():
+class TwoBooleanOperation():
     def __init__(self, left, right):
         self.left = left
         self.right = right
+    def get_type(self, envt):
+        return BOOL
+    def prune(self, variables):
+        # remove lowest nodes using variables not in variables
+        # if either left or right is empty, truth value becomes the other one
+        new_right = self.right.prune()
+        new_left = self.left.prune()
+        if new_right.get_type() != EMPTY and new_left.get_type() != EMPTY:
+            return self
+        if new_right.get_type() == EMPTY and new_left.get_type() == EMPTY:
+            return Empty()
+        return new_left if new_right.get_type() == EMPTY else new_right
+
+class And(TwoBooleanOperation):
     def __str__(self):
         return "(" + str(self.left) + ")" + " && " + "(" + str(self.right) + ")"
-    def get_type(self, envt):
-        return BOOL
-    # def evaluate(self, environment):
-    #     return self.left.evaluate(environment) and self.right.evaluate(environment)
 
-class Or():
-    def __init__(self, left, right):
-        self.left = left
-        self.right = right
+class Or(TwoBooleanOperation):
     def __str__(self):
         return "(" + str(self.left) + ")" + " || " + "(" + str(self.right) + ")"
-    def get_type(self, envt):
-        return BOOL
 
 class Not():
     def __init__(self, child):
@@ -211,6 +226,9 @@ class Not():
         return "!" + "(" + str(self.child) + ")"
     def get_type(self, envt):
         return BOOL
+    def prune(self, variables):
+        child_pruned = self.child.prune(variables)
+        return child_pruned if child_pruned.get_type() == EMPTY else self
 
 class Flse():
     def __init__(self):
@@ -219,6 +237,8 @@ class Flse():
         return "false"
     def get_type(self, envt):
         return BOOL
+    def prune(self, variables):
+        return self
 
 class Tru():
     def __init__(self):
@@ -227,6 +247,8 @@ class Tru():
         return "true"
     def get_type(self, envt):
         return BOOL
+    def prune(self, variables):
+        return self
 
 # I think we do need a list type. Leon has a list type.
 class Lst():
@@ -253,15 +275,6 @@ class Nil():
         return "Nil"
     def get_type(self, envt):
         return LIST
-
-# class Case():
-#     def __init__(self, lhs, rhs):
-#         self.lhs = lhs
-#         self.rhs = rhs
-#     def __str__(self):
-#         return "case " + str(self.lhs) + " => " + str(self.rhs)
-#     def get_type(self, envt):
-#         return CASE
 
 class Match():
     # I guess if the only thing we ever want to match on is lists, this is fine
@@ -364,7 +377,12 @@ class CallFunc():
         return self.vars
     def get_type(self, envt):
         return TArrow(var_types, ret_type)
-
+    def prune(self, variables):
+        # if using variables not in variables, return empty
+        for variable in self.vars:
+            if variable not in variables:
+                return Empty()
+        return self
 
 class App():
     def __init__(self, func, args):
@@ -441,8 +459,11 @@ class Harness(Func):
         # need to update the choose RHS
         # how to know if something is not in scope?????
         # use the variables that all the way to the left, the arguments to the function
-        # we only care about a certain function in the RHS
-        # specifically a certain Func.get_call()
+        # check if there are variables used in instances of CallFunc in self.rhs
+        #   that are not in self.vars
+        #   if so, remove the lowest ast node involving those variable(s)
+        # if self.choose_cond.get_rhs().get_type ==
+
         pass
     def get_type(self, envt):
         return self.func.get_type().to_
