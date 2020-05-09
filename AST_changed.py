@@ -312,12 +312,19 @@ class Func():
             arguments += str(self.vars[i]) + " : " + str(self.var_types[i]) + ", "
         arguments += str(self.vars[-1]) + " : " + str(self.var_types[-1])
         return arguments
+    def _add_tabs_body(self):
+        body_lines = str(self.body).split("\n")
+        tabbed_body = ""
+        for line in body_lines[:-1]:
+            tabbed_body += SCALA_TAB + line + "\n"
+        tabbed_body += SCALA_TAB + body_lines[-1] 
+        return tabbed_body
 
     def __str__(self):
         # this has a bug, multiple parameters won't be next to their type
         # also, shouldn't this get pretty printed the way scala expects it, like with scala types like List instead of LIST etc?
         # also self.body doesn't look right...
-        return 'def ' + self.name + " (" + self._get_function_arguments() + ") " + ": " + str(self.ret_type) + ' = {\n' + str(self.body) + "\n}"
+        return 'def ' + self.name + " (" + self._get_function_arguments() + ") " + ": " + str(self.ret_type) + ' = {\n' + self._add_tabs_body() + "\n}"
     def get_type(self, envt):
         return TArrow(var_types, ret_type)
 
