@@ -413,7 +413,7 @@ class Harness(Func):
         self.vars = vars_
         self.var_types = var_types
         self.ret_type = ret_type
-        self.choose_cond = choose_cond
+        self.choose_cond = choose_cond # TODO we need to prune variables that are from outer calls
         self.body = body
     def __str__(self):
         # isn't harness not a thing in Leon? why do we have a harness?
@@ -426,6 +426,11 @@ class Harness(Func):
 
         return 'harness ' + list_str(self.vars) + ": " + list_str(self.var_types) + ' = ' + str(self.body)
         # return "def " + self.name + " (" + self._get_function_arguments() + ") " + ": " + str(self.ret_type) + ' = ' + str(self.choose_cond) + self._add_tabs_body() + "\n}"
+    def prune(self):
+        # need to update the choose
+        # how to know if something is not in scope?????
+        # use the variables that all the way to the left, the arguments to the function 
+        pass
     def get_type(self, envt):
         return self.func.get_type().to_
 
