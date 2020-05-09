@@ -207,8 +207,8 @@ class TwoBooleanOperation(NonEmpty):
     def prune(self, variables):
         # remove lowest nodes using variables not in variables
         # if either left or right is empty, truth value becomes the other one
-        new_right = self.right.prune()
-        new_left = self.left.prune()
+        new_right = self.right.prune(variables)
+        new_left = self.left.prune(variables)
         if (not new_right.is_empty()) and (not new_left.is_empty()):
             return self
         if new_right.is_empty() and new_left.is_empty():
@@ -511,7 +511,7 @@ if __name__ == '__main__':
     #         )
     #     )
     # )
-    old_choose = Choose(Flse(), Lt(size.get_call(["lst_B"]), size.get_call(["lst_A"])))
+    old_choose = Choose(Flse(), And(Tru(), Lt(size.get_call(["lst_B"]), size.get_call(["lst_A"]))))
     harness =  Harness("split", [LIST], INT, ["lst_B"], old_choose, Tru())
     harness.prune()
     print(harness.get_choose_cond())
