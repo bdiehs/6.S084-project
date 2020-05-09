@@ -22,9 +22,11 @@ This is because Leon builds with an older version of sbt than ScalaZ3.
 
 When running `sbt +package`, some instructions about changing environment variables and installing Z3 will go by. You should add the follow lines to your bash profile: 
 
-`export PYTHONPATH=$PYTHONPATH:/Your/Path/Here/ScalaZ3/z3/z3-4.7.1/build/python
+```
+export PYTHONPATH=$PYTHONPATH:/Your/Path/Here/ScalaZ3/z3/z3-4.7.1/build/python
 
-export DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:/Your/Path/Here/ScalaZ3/z3/z3-4.7.1/build`
+export DYLD_LIBRARY_PATH=$DYLD_LIBRARY_PATH:/Your/Path/Here/ScalaZ3/z3/z3-4.7.1/build
+```
 
 and run `sudo make install`.
 
