@@ -349,10 +349,21 @@ class Func():
     def get_type(self, envt):
         return TArrow(var_types, ret_type)
     def get_call(self, variables):
-        # precondition: variables must be passed in in the same order as originally
-        # returns string representing calling the function
-        # for example size(lst_A)
-        return self.name + "(" + list_str(variables) + ")"
+        return CallFunc(self.name, variables, self.ret_type)
+
+class CallFunc():
+    # a call to a function
+    # uses specific variable names for the call, not the argument names
+    def __init__(self, name, vars_, ret_type):
+        self.name = name
+        self.vars = vars_
+        self.ret_type = ret_type # just for type checking
+    def __str__(self):
+        return self.name + "(" + list_str(self.vars) + ")"
+    def get_vars(self):
+        return self.vars
+    def get_type(self, envt):
+        return TArrow(var_types, ret_type)
 
 
 class App():
@@ -427,9 +438,11 @@ class Harness(Func):
         return 'harness ' + list_str(self.vars) + ": " + list_str(self.var_types) + ' = ' + str(self.body)
         # return "def " + self.name + " (" + self._get_function_arguments() + ") " + ": " + str(self.ret_type) + ' = ' + str(self.choose_cond) + self._add_tabs_body() + "\n}"
     def prune(self):
-        # need to update the choose
+        # need to update the choose RHS
         # how to know if something is not in scope?????
-        # use the variables that all the way to the left, the arguments to the function 
+        # use the variables that all the way to the left, the arguments to the function
+        # we only care about a certain function in the RHS
+        # specifically a certain Func.get_call()
         pass
     def get_type(self, envt):
         return self.func.get_type().to_

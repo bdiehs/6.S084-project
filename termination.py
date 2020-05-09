@@ -36,10 +36,11 @@ class TerminationMeasure():
         # need to modify a choose, instance of Choose
         # add new thing to RHS, because that's how it'll actually be asserted
         # termination_assertion = evaluate self.termination_measure on new_name < self.termination_measure on old_name
-        old_termination = self.termination_measure.get_call([old_name])
-        new_termination = self.termination_measure.get_call([new_name])
-        new_choose = ast.Choose(old_choose.get_lhs(), ast.And(old_choose.get_rhs(), ast.Lt(new_termination, old_termination)))
-        # new_choose = ast.Choose(ast.And(old_choose.get_lhs(), ast.Lt(new_termination, old_termination)), old_choose.get_rhs())
+        # old_termination = ast.CallFunc(self.termination_measure)
+        old_termination_call = self.termination_measure.get_call([old_name])
+        new_termination_call = self.termination_measure.get_call([new_name])
+        new_choose = ast.Choose(old_choose.get_lhs(), ast.And(old_choose.get_rhs(), \
+            ast.Lt(new_termination_call, old_termination_call)))
         return new_choose
 
 if __name__ == '__main__':
