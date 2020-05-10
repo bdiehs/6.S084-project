@@ -76,7 +76,41 @@ class Visitor():
             if not can_call_leon:
                 return None
             return self.call_leon(node, environment, outer_function)
-        
+        # TODO set and set plus
+        if node.get_node_type() == FUNC:
+            # TODO only most recent function call matters, right?
+            # TODO need to handle recursive stuff 
+            body = on(node.get_body(), can_call_leon = can_call_leon, environment = environment, outer_function = node)
+            if body != None:
+                return body
+            if not can_call_leon:
+                return None
+            return self.call_leon(node, environment, outer_function)
+        if node.get_node_type() == CALL_FUNC:
+            return str(node)
+        # TODO app
+        if node.get_node_type() == LET_IN:
+            val = on(node.get_val(), can_call_leon = can_call_leon, environment = environment, outer_function = outer_function)
+            body = on(node.get_body(), can_call_leon = can_call_leon, environment = environment, outer_function = outer_function)
+            if val != None and body != None:
+                return 'val ' + node.get_var_name() + ' = ' + val + '\n' + self.body
+        if node.get_node_type() == TUPLE:
+            new_vals = [on(val, can_call_leon, environment, outer_function) for val in node.get_vals()]
+            if None not in new_vals:
+                return list_str(new_vals)
+            if not can_call_leon:
+                return None
+            return self.call_leon(node, can_call_leon, environment, outer_function)
+        if node.get_node_type() == TUPLE_ACC:
+            # do we need everything in the tuple to be resolvable? probably.
+            new_vals = [on(val, can_call_leon, environment, outer_function) for val in node.get_vals()]
+            if None not in new_vals:
+                return "(" + list_str(new_vals) + ")" + '[' + str(node.get_idx()) + ']'
+            if not can_call_leon:
+                return None
+            return self.call_leon(node, can_call_leon, environment, outer_function)
+
+
 
 
 

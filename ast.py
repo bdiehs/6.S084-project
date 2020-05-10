@@ -444,6 +444,10 @@ class CallFunc(NonEmpty):
         return CALL_FUNC
 
 class App(NonEmpty):
+    # I think App and CallFunc are the same thing actually except this one has better types
+    # I will resolve that later
+    # this one supports currying?
+    # I will let this slide for now TODO
     def __init__(self, func, args):
         self.func = func
         self.args = args
@@ -460,7 +464,12 @@ class LetIn(NonEmpty):
         self.var_name = var_name
         self.val = val
         self.body = body
-
+    def get_var_name(self):
+        return self.var_name
+    def get_val(self):
+        return self.val
+    def get_body(self):
+        return self.body
     def __str__(self):
         return 'val ' + self.var_name + ' = ' + str(self.val) + '\n' + str(self.body)
     def get_type(self, envt):
@@ -471,6 +480,8 @@ class LetIn(NonEmpty):
 class Tuple(NonEmpty):
     def __init__(self, vals):
         self.vals = vals
+    def get_vals(self):
+        return self.vals
     def __str__(self):
         return list_str(self.vals)
     def get_type(self, envt):
@@ -482,6 +493,10 @@ class TupleAcc(NonEmpty):
     def __init__(self, tup, idx):
         self.tuple = tup
         self.idx = idx
+    def get_tuple(self):
+        return self.tuple
+    def get_idx(self):
+        return self.idx
     def __str__(self):
         return str(self.tuple) + '[' + str(self.idx) + ']'
     def get_type(self, envt):
