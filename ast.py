@@ -1,28 +1,29 @@
-# INT = "INT"
-# # PLUS = "PLUS"
-# # MINUS = "MINUS"
-# # LEQ = "LEQ"
-# # EQ = "EQ"
-# PATTERN_VALUE = "PATTERN VALUE"
-# BOOL = "BOOL"
-# # AND = "AND"
-# # NOT = "NOT"
-# # OR = "OR"
-# # FALSE = "FALSE"
-# # TRUE = "TRUE"
-# LIST = "LIST"
-# # CONS = "CONS"
-# # NIL = "NIL"
-# # CASE = "CASE"
-# # MATCH = "MATCH"
-# FUNCTION = "FUNCTION"
-# HOLE = "HOLE"
-# # IF = "IF"
-# # IF_ELSE = "IF ELSE"
-# # VAL = "VAL"
-# # CHOOSE = "CHOOSE"
-# # ANNOTATION = "ANNOTATION"
-# SET = "SET"
+VAR = "VAR"
+INTEGER = "INTEGER"
+PLUS = "PLUS"
+MINUS = "MINUS"
+LT = "LT"
+LEQ = "LEQ"
+EQ = "EQ"
+BOOL = "BOOL"
+AND = "AND"
+NOT = "NOT"
+OR = "OR"
+FALSE = "FALSE"
+TRUE = "TRUE"
+LIST = "LIST"
+CONS = "CONS"
+NIL = "NIL"
+MATCH = "MATCH"
+FUNC = "FUNCTION"
+CALL_FUNC = "CALL FUNCTION"
+LET_IN = "LET IN"
+APP = "APP"
+HOLE = "HOLE"
+ENSURING = "ENSURING"
+SET = "SET"
+SET_PLUS = "SET PLUS"
+HARNESS = "HARNESS"
 
 SCALA_TAB = "  "
 EMPTY = "EMPTY"
@@ -124,6 +125,8 @@ class Var(NonEmpty):
     #     return self.value.get_type()
     def prune(self, variables):
         return Empty() if self.name not in variables else self
+    def get_node_type(self):
+        return VAR
 
 class Int(NonEmpty):
     def __init__(self, value):
@@ -134,6 +137,8 @@ class Int(NonEmpty):
         return INT
     def prune(self, variables):
         return self
+    def get_node_type(self):
+        return INTEGER
 
 class ArithmeticOperation(NonEmpty):
     def __init__(self, left, right):
@@ -151,40 +156,40 @@ class Plus(ArithmeticOperation):
         return "(" + str(self.left) + ")" + " + " + "(" + str(self.right) + ")"
     def get_type(self, envt):
         return INT
+    def get_node_type(self):
+        return PLUS
 
 class Minus(ArithmeticOperation):
     def __str__(self):
         return "(" + str(self.left) + ")" + " - " + "(" + str(self.right) + ")"
     def get_type(self, envt):
         return INT
+    def get_node_type(self):
+        return MINUS
 
 class Lt(ArithmeticOperation):
     def __str__(self):
         return "(" + str(self.left) + ")" + " < " + "(" + str(self.right) + ")"
     def get_type(self, envt):
         return BOOL
+    def get_node_type(self):
+        return LT
 
 class Leq(ArithmeticOperation):
     def __str__(self):
         return "(" + str(self.left) + ")" + " <= " + "(" + str(self.right) + ")"
     def get_type(self, envt):
         return BOOL
+    def get_node_type(self):
+        return LEQ
 
 class Eq(ArithmeticOperation):
     def __str__(self):
         return "(" + str(self.left) + ")" + " == " + "(" + str(self.right) + ")"
     def get_type(self, envt):
         return BOOL
-
-# class PatternValue():
-#     # I don't think we should have actual variables (this will done via Val)
-#     # but we do need a thing for when we do pattern matching
-#     def __init__(self, pattern_value):
-#         self.pattern_value = pattern_value
-#     def __str__(self):
-#         return str(self.pattern_value)
-#     def get_type(self, envt):
-#         return PATTERN_VALUE
+    def get_node_type(self):
+        return EQ
 
 class Bool(NonEmpty):
     def __init__(self, value):
@@ -193,10 +198,10 @@ class Bool(NonEmpty):
         return "true" if self.value else "false"
     def get_type(self, envt):
         return BOOL
-    # def evaluate(self):
-    #     return self.value
     def prune(self, variables):
         return self
+    def get_node_type(self):
+        return BOOL
 
 class TwoBooleanOperation(NonEmpty):
     def __init__(self, left, right):
@@ -218,10 +223,14 @@ class TwoBooleanOperation(NonEmpty):
 class And(TwoBooleanOperation):
     def __str__(self):
         return "(" + str(self.left) + ")" + " && " + "(" + str(self.right) + ")"
+    def get_node_type(self):
+        return AND
 
 class Or(TwoBooleanOperation):
     def __str__(self):
         return "(" + str(self.left) + ")" + " || " + "(" + str(self.right) + ")"
+    def get_node_type(self):
+        return OR
 
 class Not(NonEmpty):
     def __init__(self, child):
@@ -233,6 +242,8 @@ class Not(NonEmpty):
     def prune(self, variables):
         child_pruned = self.child.prune(variables)
         return child_pruned if child_pruned.is_empty() else self
+    def get_node_type(self):
+        return NOT
 
 class Flse(NonEmpty):
     def __init__(self):
@@ -243,6 +254,8 @@ class Flse(NonEmpty):
         return BOOL
     def prune(self, variables):
         return self
+    def get_node_type(self):
+        return FALSE
 
 class Tru(NonEmpty):
     def __init__(self):
@@ -253,6 +266,8 @@ class Tru(NonEmpty):
         return BOOL
     def prune(self, variables):
         return self
+    def get_node_type(self):
+        return TRUE
 
 # I think we do need a list type. Leon has a list type.
 class Lst(NonEmpty):
@@ -261,6 +276,8 @@ class Lst(NonEmpty):
     def __str__(self):
         return str(self.value)
     def get_type(self, envt):
+        return LIST
+    def get_node_type(self):
         return LIST
 
 class Cons(NonEmpty):
@@ -271,6 +288,8 @@ class Cons(NonEmpty):
         return "Cons " + str(self.car) + " " +  str(self.cdr)
     def get_type(self, envt):
         return LIST
+    def get_node_type(self):
+        return CONS
 
 class Nil(NonEmpty):
     def __init__(self):
@@ -279,6 +298,8 @@ class Nil(NonEmpty):
         return "Nil"
     def get_type(self, envt):
         return LIST
+    def get_node_type(self):
+        return NIL
 
 class Match(NonEmpty):
     # I guess if the only thing we ever want to match on is lists, this is fine
@@ -296,6 +317,8 @@ class Match(NonEmpty):
         return result
     def get_type(self, envt):
         return TArrow(match_on.get_type(), nil_case.get_type())
+    def get_node_type(self):
+        return MATCH
 
 class Hole(NonEmpty):
     def __init__(self, type_):
@@ -304,6 +327,8 @@ class Hole(NonEmpty):
         return " ?? " # TODO figure this out. this is probably just for our debugging
     def get_type(self, envt):
         return self.type
+    def get_node_type(self):
+        return HOLE
 
 class St(NonEmpty):
     def __init__(self, vals):
@@ -311,6 +336,8 @@ class St(NonEmpty):
     def __str__(self):
         return str(self.vals)
     def get_type(self, envt):
+        return SET
+    def get_node_type(self):
         return SET
 
 class StPlus(NonEmpty):
@@ -321,6 +348,8 @@ class StPlus(NonEmpty):
         return "(" + str(self.left) + ")" + " ++ " + "(" + str(self.right) + ")"
     def get_type(self, envt):
         return SET
+    def get_node_type(self):
+        return SET_PLUS
 
 class Func(NonEmpty):
     def __init__(self, name, var_types, ret_type, vars_, body):
@@ -367,6 +396,8 @@ class Func(NonEmpty):
         return TArrow(var_types, ret_type)
     def get_call(self, variables):
         return CallFunc(self.name, variables, self.ret_type)
+    def get_node_type(self):
+        return FUNC
 
 class CallFunc(NonEmpty):
     # a call to a function
@@ -387,6 +418,8 @@ class CallFunc(NonEmpty):
             if variable not in variables:
                 return Empty()
         return self
+    def get_node_type(self):
+        return CALL_FUNC
 
 class App(NonEmpty):
     def __init__(self, func, args):
@@ -396,6 +429,8 @@ class App(NonEmpty):
         return str(self.func) + "(" + list_str(self.args) + ")"
     def get_type(self, envt):
         return self.func.get_type().to_
+    def get_node_type(self):
+        return APP
 
 class LetIn(NonEmpty):
     # val assignment followed by body
@@ -408,6 +443,8 @@ class LetIn(NonEmpty):
         return 'val ' + self.var_name + ' = ' + str(self.val) + '\n' + str(self.body)
     def get_type(self, envt):
         return self.body.get_type(envt)
+    def get_node_type(self):
+        return LET_IN
 
 class Tuple(NonEmpty):
     def __init__(self, vals):
@@ -416,6 +453,8 @@ class Tuple(NonEmpty):
         return list_str(self.vals)
     def get_type(self, envt):
         return TTuple([val.get_type() for val in self.vals])
+    def get_node_type(self):
+        return TUPLE
 
 class TupleAcc(NonEmpty):
     def __init__(self, tup, idx):
@@ -425,6 +464,8 @@ class TupleAcc(NonEmpty):
         return str(self.tuple) + '[' + str(self.idx) + ']'
     def get_type(self, envt):
         return self.tuple.get_type()[self.idx]
+    def get_node_type(self):
+        return TUPLE_ACC
 
 class Ensuring(NonEmpty):
     def __init__(self, lhs, rhs):
@@ -440,6 +481,8 @@ class Ensuring(NonEmpty):
         return "ensuring(" + str(self.lhs) + " => " + str(self.rhs) + ")"
     def get_type(self):
         return BOOL # I think? should it be its own type?
+    def get_node_type(self):
+        return ENSURING
 
 class Harness(Func):
     # for termination measure purposes, I want choose_cond to be very easy to change
@@ -468,6 +511,8 @@ class Harness(Func):
             self.ensuring.set_rhs(rhs_pruned)
     def get_type(self, envt):
         return self.func.get_type().to_
+    def get_node_type(self):
+        return HARNESS
 
 
 
