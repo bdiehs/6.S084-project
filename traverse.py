@@ -52,7 +52,34 @@ class Visitor():
             return self.call_leon(node, environment, outer_function)
         if node.get_node_type() == FALSE or node.get_node_type == TRUE:
             return str(node)
+        if node.get_node_type() == CONS:
+            car = on(node.get_car(), can_call_leon = can_call_leon, environment = environment, outer_function = outer_function)
+            cdr = on(node.get_cdr(), can_call_leon = can_call_leon, environment = environment, outer_function = outer_function)
+            if car != None and cdr != None:
+                return "Cons " + car + SPACE + cdr
+            if not can_call_leon:
+                return None
+            return self.call_leon(node, environment, outer_function)
+        if node.get_node_type() == NIL:
+            return str(node)
+        if node.get_node_type() == MATCH:
+            # TODO add cons case to other stuff? or nah... should never exist in the wild
+            match_on = on(node.get_match_on(), can_call_leon = can_call_leon, environment = environment, outer_function = outer_function)
+            nil_case = on(node.get_nil_case(), can_call_leon = can_call_leon, environment = environment, outer_function = outer_function)
+            cons_case = on(node.get_cons_case(), can_call_leon = can_call_leon, environment = environment, outer_function = outer_function)
+            if match_on != None and nil_case != None and cons_case != None:
+                result = match_on + " match {\n" + SCALA_TAB
+                result += "case Nil => " + nil_case + "\n" + SCALA_TAB
+                result += cons_case
+                result += "\n}"
+                return result
+            if not can_call_leon:
+                return None
+            return self.call_leon(node, environment, outer_function)
         
+
+
+
 
 
 

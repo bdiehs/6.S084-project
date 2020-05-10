@@ -243,6 +243,8 @@ class Not(NonEmpty):
         return "!" + "(" + str(self.child) + ")"
     def get_type(self, envt):
         return BOOL
+    def get_child(self):
+        return self.child
     def prune(self, variables):
         child_pruned = self.child.prune(variables)
         return child_pruned if child_pruned.is_empty() else self
@@ -288,6 +290,10 @@ class Cons(NonEmpty):
     def __init__(self, car, cdr):
         self.car = car
         self.cdr = cdr
+    def get_car(self):
+        return self.car
+    def get_cdr(self):
+        return self.cdr
     def __str__(self):
         return "Cons " + str(self.car) + " " +  str(self.cdr)
     def get_type(self, envt):
@@ -305,18 +311,30 @@ class Nil(NonEmpty):
     def get_node_type(self):
         return NIL
 
+class ConsCase(NonEmpty, Cons):
+    def __init__(self, car, cdr, cons_case):
+        self.cons = Cons(car, cdr)
+        self.cons_case = cons_case
+    def __str__(self):
+        return "case Cons(" + self.cons_vars[0] + ", " + self.cons_vars[1] + ") => \n" + SCALA_TAB*2 + str(self.cons_case)
+
 class Match(NonEmpty):
     # I guess if the only thing we ever want to match on is lists, this is fine
-    def __init__(self, match_on, nil_case, cons_vars, cons_case):
+    def __init__(self, match_on, nil_case, cons_case):
         self.match_on = match_on
         self.nil_case = nil_case
-        self.cons_vars = cons_vars
-        self.cons_case = cons_case
+        self.cons_case = cons_case # ConsCase instance
+    def get_match_on(self):
+        return self.match_on
+    def get_nil_case(self):
+        return self.nil_case
+    def get_cons_case(self):
+        return self.cons_case
     def __str__(self):
         # replacing tabs with two spaces each
         result = str(self.match_on) + " match {\n" + SCALA_TAB
         result += "case Nil => " + str(self.nil_case) + "\n" + SCALA_TAB
-        result += "case Cons(" + self.cons_vars[0] + ", " + self.cons_vars[1] + ") => \n" + SCALA_TAB*2 + str(self.cons_case)
+        result += str(self.cons_case)
         result += "\n}"
         return result
     def get_type(self, envt):
