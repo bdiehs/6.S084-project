@@ -390,7 +390,7 @@ class Func(NonEmpty):
         return self.vars
     def get_body(self):
         return self.body # rep exposure
-    def _get_function_arguments(self):
+    def get_function_arguments(self):
         if len(self.vars) == 0:
             return ""
 
@@ -399,7 +399,7 @@ class Func(NonEmpty):
             arguments += str(self.vars[i]) + " : " + str(self.var_types[i]) + ", "
         arguments += str(self.vars[-1]) + " : " + str(self.var_types[-1])
         return arguments
-    def _add_tabs_body(self):
+    def add_tabs_body(self, body):
         body_lines = str(self.body).split("\n")
         if len(body_lines) == 0:
             return ""
@@ -413,7 +413,7 @@ class Func(NonEmpty):
         # this has a bug, multiple parameters won't be next to their type
         # also, shouldn't this get pretty printed the way scala expects it, like with scala types like List instead of LIST etc?
         # also self.body doesn't look right...
-        return 'def ' + self.name + " (" + self._get_function_arguments() + ") " + ": " + str(self.ret_type) + ' = {\n' + self._add_tabs_body() + "\n}"
+        return 'def ' + self.name + " (" + self.get_function_arguments() + ") " + ": " + str(self.ret_type) + ' = {\n' + self.add_tabs_body(self.body) + "\n}"
     def get_type(self, envt):
         return TArrow(var_types, ret_type)
     def get_call(self, variables):
@@ -530,11 +530,21 @@ class Harness(Func):
         self.ret_type = ret_type
         self.ensuring = ensuring # TODO we need to prune variables that are from outer calls
         self.body = body
+    def get_name(self):
+        return self.name
+    def get_var_types(self):
+        return self.var_types
+    def get_ret_type(self):
+        return self.ret_type
+    def get_vars(self):
+        return self.vars
     def get_ensuring(self):
         return self.ensuring
+    def get_body(self):
+        return self.body
     def __str__(self):
-        return "def " + self.name + " (" + self._get_function_arguments() + ") " + ": "\
-            + str(self.ret_type) + ' = {\n' + self._add_tabs_body() + "\n} " + str(self.ensuring)
+        return "def " + self.name + " (" + self.get_function_arguments() + ") " + ": "\
+            + str(self.ret_type) + ' = {\n' + self.add_tabs_body(self.body) + "\n} " + str(self.ensuring)
     def prune(self):
         # need to update the choose RHS
         # use the variables that all the way to the left, the arguments to the function

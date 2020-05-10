@@ -10,7 +10,7 @@ class Visitor():
     def call_leon(self, node, environment, outer_function):
         # TODO, execute bash script and read in from file
         return ""
-    def on(self, node, can_call_leon = True, environment = Set(), outer_function = None):
+    def on(self, node, can_call_leon = True, environment = {}, outer_function = None):
         # if there was a hole in a subtree and the node couldn't get a program for itself,
         # need to pass that info up to parent
         # return (string for program, boolean) ?
@@ -113,6 +113,14 @@ class Visitor():
             if not can_call_leon:
                 return None
             return self.call_leon(node, can_call_leon, environment, outer_function)
+        if node.get_node_type() == ENSURING:
+            # do I have to prune stuff here?
+            return str(node) # there's never any holes in an ensuring, right?
+        if node.get_node_type() == HARNESS:
+            new_body = on(node.get_body(), can_call_leon = True, environment = {}, outer_function = None)
+            ensuring = on(node.get_ensuring(), can_call_leon = True, environment = {}, outer_function = None)
+            return "def " + node.get_name() + " (" + node.get_function_arguments() + ") " + ": "\
+                + str(self.ret_type) + ' = {\n' + node.add_tabs_body(new_body) + "\n} " + ensuring
 
 
 
