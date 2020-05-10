@@ -348,7 +348,7 @@ class Hole(NonEmpty):
         self.type = type_
     def __str__(self):
         return " ?? " # TODO figure this out. this is probably just for our debugging
-    def get_type(self, envt):
+    def get_type(self, envt = None):
         return self.type
     def get_node_type(self):
         return HOLE
@@ -515,6 +515,15 @@ class Ensuring(NonEmpty):
         return self.rhs
     def set_rhs(self, rhs):
         self.rhs = rhs
+    def prune(self):
+        # need to update the choose RHS
+        # use the variables that all the way to the left, the arguments to the function
+        # check if there are variables used in instances of CallFunc in self.rhs
+        #   that are not in self.vars
+        #   if so, remove the lowest ast node involving those variable(s)
+        rhs_pruned = self.ensuring.get_rhs().prune(self.vars)
+        return Tru() if rhs_pruned.is_empty() else rhs_pruned
+        # TODO think about whether or not this should get mutated
     def __str__(self):
         return "ensuring(" + str(self.lhs) + " => " + str(self.rhs) + ")"
     def get_type(self):
