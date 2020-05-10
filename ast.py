@@ -17,6 +17,7 @@ NIL = "NIL"
 MATCH = "MATCH"
 FUNC = "FUNCTION"
 CALL_FUNC = "CALL FUNCTION"
+FUNC_TYPE = "FUNC TYPE"
 LET_IN = "LET IN"
 APP = "APP"
 HOLE = "HOLE"
@@ -39,7 +40,12 @@ class Type:
 # so I'm going to change LIST -> List etc
 # and change the __str__ to a get_type in case we need that
 # also we don't actually need inits if we don't do anything in them
-class TList(Type):
+
+class NonFuncType(Type):
+    def is_func_type(self):
+        return False
+
+class TList(NonFuncType):
     def __init__(self):
         pass
     def get_type(self):
@@ -47,7 +53,7 @@ class TList(Type):
     def __str__(self):
         return "List"
 
-class TSet(Type):
+class TSet(NonFuncType):
     def __init__(self, type_):
         pass
     def get_type(self):
@@ -55,7 +61,7 @@ class TSet(Type):
     def __str__(self):
         return "Set"
 
-class TInt(Type):
+class TInt(NonFuncType):
     def __init__(self):
         pass
     def get_type(self):
@@ -63,7 +69,7 @@ class TInt(Type):
     def __str__(self):
         return "Int"
 
-class TBool(Type):
+class TBool(NonFuncType):
     def __init__(self):
         pass
     def get_type(self):
@@ -71,7 +77,7 @@ class TBool(Type):
     def __str__(self):
         return "Boolean"
 
-class TArrow(Type):
+class TArrow(NonFuncType):
     def __init__(self, t1, t2):
         self.from_ = t1
         self.to_ = t2
@@ -80,7 +86,7 @@ class TArrow(Type):
     def __str__(self):
         return self.get_type() # for now
 
-class TTuple(Type):
+class TTuple(NonFuncType):
     # what is this for?
     def __init__(self, types):
         self.types = types
@@ -345,10 +351,14 @@ class Match(NonEmpty):
 
 class Hole(NonEmpty):
     def __init__(self, type_):
+        # primitive or FuncType
         self.type = type_
     def __str__(self):
         return " ?? " # TODO figure this out. this is probably just for our debugging
     def get_type(self, envt = None):
+        # if not a function, it can just be literally the type
+        # if it is a function, I want the types of the args
+        #   and the return type
         return self.type
     def get_node_type(self):
         return HOLE
@@ -374,19 +384,47 @@ class StPlus(NonEmpty):
     def get_node_type(self):
         return SET_PLUS
 
-class Func(NonEmpty):
-    def __init__(self, name, var_types, ret_type, vars_, body):
-        self.name = name
-        self.vars = vars_
+class FuncType():
+    def __init__(self, var_types, ret_type):
         self.var_types = var_types
         self.ret_type = ret_type
-        self.body = body
-    def get_name(self):
-        return self.name
+
+        types_counts = {var_type : 0 for var_type in self.var_types}
+        self.fake_var_names = []
+        for var_type in self.var_types:
+            self.fake_var_names.append(str(var_type) + str(types_counts[var_type]))
+            types_counts[var_type] += 1
+
+    def get_function_arguments(self):
+        if len(self.var_types) == 0:
+            return ""
+
+        arguments = ""
+        for i in range(len(self.fake_var_names) -1):
+            arguments += str(self.fake_var_names[i]) + " : " + str(self.var_types[i]) + ", "
+        arguments += str(self.fake_var_names[-1]) + " : " + str(self.var_types[-1])
+        return arguments
+    def get_fake_var_names(self):
+        return self.fake_var_names
     def get_var_types(self):
         return self.var_types
     def get_ret_type(self):
         return self.ret_type
+    def get_node_type(self):
+        return FUNC_TYPE
+
+
+class Func(NonEmpty):
+    def __init__(self, name, func_type, vars_, body):
+        # I'm changing this to have a func type of var types and ret type
+        self.name = name
+        self.vars = vars_
+        self.func_type = func_type
+        self.body = body
+    def get_name(self):
+        return self.name
+    def get_func_type(self):
+        return self.func_type
     def get_vars(self):
         return self.vars
     def get_body(self):
@@ -396,9 +434,10 @@ class Func(NonEmpty):
             return ""
 
         arguments = ""
+        var_types = self.func_type.get_var_types()
         for i in range(len(self.vars) -1):
-            arguments += str(self.vars[i]) + " : " + str(self.var_types[i]) + ", "
-        arguments += str(self.vars[-1]) + " : " + str(self.var_types[-1])
+            arguments += str(self.vars[i]) + " : " + str(var_types[i]) + ", "
+        arguments += str(self.vars[-1]) + " : " + str(var_types[-1])
         return arguments
     def add_tabs_body(self, body):
         body_lines = str(self.body).split("\n")
@@ -414,11 +453,12 @@ class Func(NonEmpty):
         # this has a bug, multiple parameters won't be next to their type
         # also, shouldn't this get pretty printed the way scala expects it, like with scala types like List instead of LIST etc?
         # also self.body doesn't look right...
-        return 'def ' + self.name + " (" + self.get_function_arguments() + ") " + ": " + str(self.ret_type) + ' = {\n' + self.add_tabs_body(self.body) + "\n}"
+        return 'def ' + self.name + " (" + self.get_function_arguments() + ") " + ": " + str(self.func_type.get_ret_type()) + ' = {\n' + self.add_tabs_body(self.body) + "\n}"
     def get_type(self, envt):
-        return TArrow(var_types, ret_type)
+        # return TArrow(self.var_types, ret_type)
+        return self.func_type
     def get_call(self, variables):
-        return CallFunc(self.name, variables, self.ret_type)
+        return CallFunc(self.name, variables, self.func_type.get_ret_type())
     def get_node_type(self):
         return FUNC
 
@@ -435,6 +475,8 @@ class CallFunc(NonEmpty):
         return self.vars
     def get_type(self, envt):
         return TArrow(var_types, ret_type)
+    def is_func_type(self):
+        True
     def prune(self, variables):
         # if using variables not in variables, return empty
         for variable in self.vars:
@@ -521,8 +563,9 @@ class Ensuring(NonEmpty):
         # check if there are variables used in instances of CallFunc in self.rhs
         #   that are not in self.vars
         #   if so, remove the lowest ast node involving those variable(s)
-        rhs_pruned = self.ensuring.get_rhs().prune(self.vars)
-        return Tru() if rhs_pruned.is_empty() else rhs_pruned
+        return self # TODO
+        # rhs_pruned = self.rhs.prune(self.vars) # how to get variables out of LHS? would have to implement for everything
+        # return Tru() if rhs_pruned.is_empty() else rhs_pruned
         # TODO think about whether or not this should get mutated
     def __str__(self):
         return "ensuring(" + str(self.lhs) + " => " + str(self.rhs) + ")"
@@ -561,11 +604,12 @@ class Harness(Func):
         # check if there are variables used in instances of CallFunc in self.rhs
         #   that are not in self.vars
         #   if so, remove the lowest ast node involving those variable(s)
-        rhs_pruned = self.ensuring.get_rhs().prune(self.vars)
-        if rhs_pruned.is_empty():
-            self.ensuring.set_rhs(Tru())
-        else:
-            self.ensuring.set_rhs(rhs_pruned)
+        return self # TODO
+        # rhs_pruned = self.ensuring.get_rhs().prune(self.vars) # don't prune over just self.vars, also over stuff in scope in LHS
+        # if rhs_pruned.is_empty():
+        #     self.ensuring.set_rhs(Tru())
+        # else:
+        #     self.ensuring.set_rhs(rhs_pruned)
     def get_type(self, envt):
         return self.func.get_type().to_
     def get_node_type(self):

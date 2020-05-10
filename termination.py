@@ -49,7 +49,7 @@ if __name__ == '__main__':
         ast.Match(ast.Var('lst'),
             ast.Int(0),
             size_cons_case)
-        )
+    )
     term_measure = TerminationMeasure(size)
     old_ensuring = ast.Ensuring(ast.Flse(), ast.Tru())
     new_ensuring = term_measure.add_to_choose(old_ensuring, "lst_A", "lst_B")
