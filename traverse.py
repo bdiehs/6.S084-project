@@ -5,11 +5,60 @@ TWO_BOOLEAN_OPERATIONS = {AND, OR}
 BOOLEAN_OPERATIONS_SYMBOLS = {AND : "&&", OR : "||"}
 SPACE = " "
 
+SIZE_CONS_CASE = ConsCase("_", "rest", Plus(Int(1), App(Var('size'), [Var('rest')])))
+SIZE = Func('size', [LIST], INT, ['lst'],
+    Match(Var('lst'),
+        Int(0),
+        SIZE_CONS_CASE)
+)
+
 class Visitor():
     # needs on for each type of node
-    def call_leon(self, node, environment, outer_function, ensuring):
+    def get_leon_call(self, node, environment, outer_function, ensuring):
         # TODO, execute bash script and read in from file
-        return ""
+        # this might've been a bad idea to send the node, here, now need to type check again? would change that
+        # need the signature (type of hole)
+        # need to do termination stuff
+        # need to apply the ensuring
+        # need to use the environment. need to build up lines of vals for that DONE
+        leon_call = ""
+        envt_lines = ""
+        for name, value in environment.items():
+            envt_lines += 'val ' + name + ' = ' + str(value) + '\n'
+        leon_call += envt_lines # hopefully it's right for those to be outside the function?
+
+        # ensuring stuff and termination stuff
+        if node.get_node_type() != FUNC:
+            function_str = "def hole() : " + str(node.get_type()) + " = {\n}"
+            leon_call += function_str
+            leon_call += SPACE + str(ensuring)
+        else:
+            function_str = "def hole(" + node.get_function_arguments() + ") : " + node.get_ret_type() + "{\n}"
+            if outer_function == None or outer_function.get_name() != node.get_name():
+                function_str += ensuring
+            else:
+                new_ensuring = node.get_ensuring().prune()
+                # termination measure is if any of the args is a list, it needs to be smaller
+                # need to change names
+                current_vars = node.get_vars()
+                current_var_types = node.get_var_types()
+                outer_vars = outer_function.get_vars()
+                outer_var_types = outer_function.get_var_types()
+
+                new_ensuring = ensuring
+                for i in range(len(current_var_types)):
+                    if current_var_types[i] == LIST:
+                        renamed_current_var = current_vars[i] + "'" # make it prime
+                        measure = Lt(SIZE(renamed_current_var), SIZE(outer_vars[i]))
+                        termination_measure = TerminationMeasure(SIZE)
+                        new_ensuring = termination_measure.add_to_choose(new_ensuring, outer_vars[i], renamed_current_var)
+                function_str += SPACE + new_ensuring
+            leon_call += function_str
+        return leon_call
+    def call_leon(self, node, environment, outer_function, ensuring):
+        leon_call = self.get_leon_call(node, environment, outer_function, ensuring)
+        # TODO actually run the script
+        return leon_call # for now
     def on(self, node, can_call_leon = True, environment = {}, outer_function = None, ensuring = None):
         # if there was a hole in a subtree and the node couldn't get a program for itself,
         # need to pass that info up to parent
@@ -126,3 +175,12 @@ class Visitor():
             if not can_call_leon:
                 return None
             return self.call_leon(node, environment, outer_function, ensuring)
+
+if __name__ == '__main__':
+    visitor = Visitor()
+    node = Hole(INT)
+    environment = {}
+    outer_function = None
+    ensuring = Ensuring(Flse(), Tru())
+    call = visitor.get_leon_call(node, environment, outer_function, ensuring)
+    print(call)
