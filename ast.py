@@ -426,7 +426,7 @@ class TupleAcc(NonEmpty):
     def get_type(self, envt):
         return self.tuple.get_type()[self.idx]
 
-class Choose(NonEmpty):
+class Ensuring(NonEmpty):
     def __init__(self, lhs, rhs):
         self.lhs = lhs
         self.rhs = rhs
@@ -437,43 +437,35 @@ class Choose(NonEmpty):
     def set_rhs(self, rhs):
         self.rhs = rhs
     def __str__(self):
-        return str(self.lhs) + " => " + str(self.rhs)
+        return "ensuring(" + str(self.lhs) + " => " + str(self.rhs) + ")"
     def get_type(self):
         return BOOL # I think? should it be its own type?
 
 class Harness(Func):
     # for termination measure purposes, I want choose_cond to be very easy to change
-    def __init__(self, name, var_types, ret_type, vars_, choose_cond, body):
+    def __init__(self, name, var_types, ret_type, vars_, ensuring, body):
         self.name = name
         self.vars = vars_
         self.var_types = var_types
         self.ret_type = ret_type
-        self.choose_cond = choose_cond # TODO we need to prune variables that are from outer calls
+        self.ensuring = ensuring # TODO we need to prune variables that are from outer calls
         self.body = body
-    def get_choose_cond(self):
-        return self.choose_cond
+    def get_ensuring(self):
+        return self.ensuring
     def __str__(self):
-        # isn't harness not a thing in Leon? why do we have a harness?
-        # is this for our own use (like functions that aren't Harnesses, we won't search for holes and will just pretty print)?
-        # anyway I'm changing this to like function
-        # I don't think we want the keyword harness in the string
-        # TODO figure out: are there two sets of curly brackets, one for choose, one for body? or one whole thing?
-        # would it be one big choose with the body in it, and holes in teh body => the post condition? my best guess
-        # I think we should discuss this so I'm going to leave it for now
-
-        return 'harness ' + list_str(self.vars) + ": " + list_str(self.var_types) + ' = ' + str(self.body)
-        # return "def " + self.name + " (" + self._get_function_arguments() + ") " + ": " + str(self.ret_type) + ' = ' + str(self.choose_cond) + self._add_tabs_body() + "\n}"
+        return "def " + self.name + " (" + self._get_function_arguments() + ") " + ": "\
+            + str(self.ret_type) + ' = {\n' + self._add_tabs_body() + "\n} " + str(self.ensuring)
     def prune(self):
         # need to update the choose RHS
         # use the variables that all the way to the left, the arguments to the function
         # check if there are variables used in instances of CallFunc in self.rhs
         #   that are not in self.vars
         #   if so, remove the lowest ast node involving those variable(s)
-        rhs_pruned = self.choose_cond.get_rhs().prune(self.vars)
+        rhs_pruned = self.ensuring.get_rhs().prune(self.vars)
         if rhs_pruned.is_empty():
-            self.choose_cond.set_rhs(Tru())
+            self.ensuring.set_rhs(Tru())
         else:
-            self.choose_cond.set_rhs(rhs_pruned)
+            self.ensuring.set_rhs(rhs_pruned)
     def get_type(self, envt):
         return self.func.get_type().to_
 
@@ -499,7 +491,7 @@ if __name__ == '__main__':
     # )
     # split0 = Harness('split', [LIST], TTuple([LIST, LIST]), ['lst'],
     #     Func('_', [TTuple([LIST, LIST])], BOOL, ['r'],
-    #         Eq(App(Var('content'), Var('lst')), StPlus(App(Var('content'), TupleAcc(Var('r'), 0)), App(Var('content'), TupleAcc(Var('r'), 1))))),
+    #         Eq(App(Var('content'), Var('lst')), StPlus(App(Var('content'), TupleAcc(Var('r'), 0)), App('content', [TupleAcc(Var('r'), 1)])))),
     #     Match(Var('lst'),
     #         Tuple([Nil(), Nil()]),
     #         ['h', 't'], Match(Var('t'),
@@ -511,10 +503,12 @@ if __name__ == '__main__':
     #         )
     #     )
     # )
-    old_choose = Choose(Flse(), And(Tru(), Lt(size.get_call(["lst_B"]), size.get_call(["lst_A"]))))
+    # print(split0)
+    old_choose = Ensuring(Flse(), And(Tru(), Lt(size.get_call(["lst_B"]), size.get_call(["lst_A"]))))
     harness =  Harness("split", [LIST], INT, ["lst_B"], old_choose, Tru())
+    print(harness)
     harness.prune()
-    print(harness.get_choose_cond())
+    print(harness.get_ensuring())
 
 
     pass
