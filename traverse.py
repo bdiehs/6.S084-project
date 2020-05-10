@@ -64,9 +64,9 @@ class Visitor():
             return str(node)
         if node.get_node_type() == MATCH:
             # TODO add cons case to other stuff? or nah... should never exist in the wild
-            match_on = on(node.get_match_on(), can_call_leon = can_call_leon, environment = environment, outer_function = outer_function)
-            nil_case = on(node.get_nil_case(), can_call_leon = can_call_leon, environment = environment, outer_function = outer_function)
-            cons_case = on(node.get_cons_case(), can_call_leon = can_call_leon, environment = environment, outer_function = outer_function)
+            match_on = on(node.get_match_on(), can_call_leon = False, environment = environment, outer_function = outer_function)
+            nil_case = on(node.get_nil_case(), can_call_leon = False, environment = environment, outer_function = outer_function)
+            cons_case = on(node.get_cons_case(), can_call_leon = False, environment = environment, outer_function = outer_function)
             if match_on != None and nil_case != None and cons_case != None:
                 result = match_on + " match {\n" + SCALA_TAB
                 result += "case Nil => " + nil_case + "\n" + SCALA_TAB
@@ -79,7 +79,10 @@ class Visitor():
         # TODO set and set plus
         if node.get_node_type() == FUNC:
             # TODO only most recent function call matters, right?
-            # TODO need to handle recursive stuff 
+            # TODO need to handle recursive stuff
+            if outer_function != None and node.get_name() == outer_function.get_name():
+                # recursive call, must handle measure stuff
+                pass # TODO fix termination which is currently broken
             body = on(node.get_body(), can_call_leon = can_call_leon, environment = environment, outer_function = node)
             if body != None:
                 return body
@@ -91,6 +94,7 @@ class Visitor():
         # TODO app
         if node.get_node_type() == LET_IN:
             val = on(node.get_val(), can_call_leon = can_call_leon, environment = environment, outer_function = outer_function)
+            environment[node.get_var_name()] = val
             body = on(node.get_body(), can_call_leon = can_call_leon, environment = environment, outer_function = outer_function)
             if val != None and body != None:
                 return 'val ' + node.get_var_name() + ' = ' + val + '\n' + self.body
