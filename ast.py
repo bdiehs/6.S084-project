@@ -311,7 +311,7 @@ class Nil(NonEmpty):
     def get_node_type(self):
         return NIL
 
-class ConsCase(NonEmpty, Cons):
+class ConsCase(Cons):
     def __init__(self, car, cdr, cons_case):
         self.cons = Cons(car, cdr)
         self.cons_case = cons_case
@@ -569,12 +569,12 @@ class Harness(Func):
 
 
 if __name__ == '__main__':
-    size = Func('size', [LIST, INT], INT, ['lst', Int(0)],
-        Match(Var('lst'),
-            Int(0),
-            ['_', 'rest'], Plus(Int(1), App(Var('size'), [Var('rest')]))
-        )
-    )
+    # size = Func('size', [LIST, INT], INT, ['lst', Int(0)],
+    #     Match(Var('lst'),
+    #         Int(0),
+    #         ['_', 'rest'], Plus(Int(1), App(Var('size'), [Var('rest')]))
+    #     )
+    # )
     # content = Func('content', [LIST], INT, ['lst'],
     #     Match(Var('lst'),
     #         St([]),
@@ -596,11 +596,11 @@ if __name__ == '__main__':
     #     )
     # )
     # print(split0)
-    old_choose = Ensuring(Flse(), And(Tru(), Lt(size.get_call(["lst_B"]), size.get_call(["lst_A"]))))
-    harness =  Harness("split", [LIST], INT, ["lst_B"], old_choose, Tru())
-    print(harness)
-    harness.prune()
-    print(harness.get_ensuring())
+    # old_choose = Ensuring(Flse(), And(Tru(), Lt(size.get_call(["lst_B"]), size.get_call(["lst_A"]))))
+    # harness =  Harness("split", [LIST], INT, ["lst_B"], old_choose, Tru())
+    # print(harness)
+    # harness.prune()
+    # print(harness.get_ensuring())
 
 
     pass
