@@ -144,6 +144,10 @@ class ArithmeticOperation(NonEmpty):
     def __init__(self, left, right):
         self.left = left
         self.right = right
+    def get_left(self):
+        return self.left
+    def get_right(self):
+        return self.right
     def prune(self, variables):
         new_left = self.left.prune(variables)
         new_right = self.right.prune(variables)
