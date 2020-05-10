@@ -312,11 +312,12 @@ class Nil(NonEmpty):
         return NIL
 
 class ConsCase(Cons):
-    def __init__(self, car, cdr, cons_case):
-        self.cons = Cons(car, cdr)
+    def __init__(self, car_name, cdr_name, cons_case):
+        self.car_name = car_name
+        self.cdr_name = cdr_name
         self.cons_case = cons_case
     def __str__(self):
-        return "case Cons(" + self.cons_vars[0] + ", " + self.cons_vars[1] + ") => \n" + SCALA_TAB*2 + str(self.cons_case)
+        return "case Cons(" + self.car_name + ", " + self.cdr_name + ") => \n" + SCALA_TAB*2 + str(self.cons_case)
 
 class Match(NonEmpty):
     # I guess if the only thing we ever want to match on is lists, this is fine

@@ -39,18 +39,18 @@ class TerminationMeasure():
         # old_termination = ast.CallFunc(self.termination_measure)
         old_termination_call = self.termination_measure.get_call([old_name])
         new_termination_call = self.termination_measure.get_call([new_name])
-        new_choose = ast.Choose(old_choose.get_lhs(), ast.And(old_choose.get_rhs(), \
+        new_ensuring = ast.Ensuring(old_choose.get_lhs(), ast.And(old_choose.get_rhs(), \
             ast.Lt(new_termination_call, old_termination_call)))
-        return new_choose
+        return new_ensuring
 
 if __name__ == '__main__':
+    size_cons_case = ast.ConsCase("_", "rest", ast.Plus(ast.Int(1), ast.App(ast.Var('size'), [ast.Var('rest')])))
     size = ast.Func('size', [ast.LIST], ast.INT, ['lst'],
         ast.Match(ast.Var('lst'),
             ast.Int(0),
-            ['_', 'rest'], ast.Plus(ast.Int(1), ast.App(ast.Var('size'), [ast.Var('rest')]))
+            size_cons_case)
         )
-    )
     term_measure = TerminationMeasure(size)
-    old_choose = ast.Choose(ast.Flse(), ast.Tru())
-    new_choose = term_measure.add_to_choose(old_choose, "lst_A", "lst_B")
-    print(new_choose)
+    old_ensuring = ast.Ensuring(ast.Flse(), ast.Tru())
+    new_ensuring = term_measure.add_to_choose(old_ensuring, "lst_A", "lst_B")
+    print(new_ensuring)
