@@ -7,7 +7,7 @@ SPACE = " "
 
 class Visitor():
     # needs on for each type of node
-    def call_leon(self, node, environment, outer_function):
+    def call_leon(self, node, environment, outer_function, ensuring):
         # TODO, execute bash script and read in from file
         return ""
     def on(self, node, can_call_leon = True, environment = {}, outer_function = None, ensuring = None):
