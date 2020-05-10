@@ -7,7 +7,7 @@ SPACE = " "
 
 class Visitor():
     # needs on for each type of node
-    def call_leon(self, environment, outer_function):
+    def call_leon(self, node, environment, outer_function):
         # TODO, execute bash script and read in from file
         return ""
     def on(self, node, can_call_leon = True, environment = Set(), outer_function = None):
@@ -31,10 +31,10 @@ class Visitor():
             if not can_call_leon:
                 return None
             # at least one is None and can call leon: do it
-            return self.call_leon(environment, outer_function)
+            return self.call_leon(node, environment, outer_function)
         if node.get_node_type() in TWO_BOOLEAN_OPERATIONS:
-            left = on(node.get_left, can_call_leon = False, environment = environment, outer_function = outer_function)
-            right = on(node.get_right, can_call_leon = False, environment = environment, outer_function = outer_function)
+            left = on(node.get_left(), can_call_leon = False, environment = environment, outer_function = outer_function)
+            right = on(node.get_right(), can_call_leon = False, environment = environment, outer_function = outer_function)
 
             if (left == None or right == None) and (not can_call_leon):
                 return None
@@ -42,7 +42,19 @@ class Visitor():
                 return "(" + left + SPACE + BOOLEAN_OPERATIONS_SYMBOLS[node.get_type()] + SPACE + right + ")"
             if not can_call_leon:
                 return None
-            return self.call_leon(environment, outer_function)
+            return self.call_leon(node, environment, outer_function)
+        if node.get_node_type() == NOT:
+            child = on(node.get_child(), can_call_leon = can_call_leon, environment = environment, outer_function = outer_function)
+            if child != None:
+                return child
+            if child == None and (not can_call_leon):
+                return None
+            return self.call_leon(node, environment, outer_function)
+        if node.get_node_type() == FALSE or node.get_node_type == TRUE:
+            return str(node)
+        
+
+
 
         # TODO other boolean stuff
         # lists, match
