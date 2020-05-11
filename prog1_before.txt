@@ -1,0 +1,40 @@
+import leon.annotation._
+import leon.lang._
+import leon.lang.synthesis._
+
+object Complete {
+  
+  sealed abstract class List
+  case class Cons(head: Int, tail: List) extends List
+  case object Nil extends List
+  
+  def size (lst : List) : Int = {
+    lst match {
+      case Nil => 0
+      case Cons(_, rest) => 
+        (1) + (size(rest))
+    }
+  }
+  def content (lst : List) : Set[Int] = {
+    lst match {
+      case Nil => Set.empty[Int]
+      case Cons(e, rest) => 
+        (Set(e)) ++ (content(rest))
+    }
+  }
+
+  def split (lst : List) : (List, List) = {
+  choose ((_r: (List, List)) => (content(lst)) == ((content(_r._1)) ++ (content(_r._2))))
+    lst match {
+      case Nil => (Nil, Nil)
+      case Cons(h, t) => 
+        t match {
+      case Nil => (Nil, Cons (h, Nil))
+      case Cons(h2, t2) => 
+        val r = split(t2)
+    (Cons (h, r._1), Cons (h2, r._2))
+    }
+    }
+  }
+  
+}
