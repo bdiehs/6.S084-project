@@ -33,17 +33,21 @@ class Visitor():
     def get_leon_call_non_func(self, node, environment, choose):
         # not a hole. could be from inside a hole. not a function.
         # get everything for leon call after the environment?
+        print("NON FUNC")
         leon_call = ""
         envt_lines = ""
         for name, value in environment.items():
             envt_lines += 'val ' + name + ' = ' + str(value) + '\n'
         leon_call += envt_lines # hopefully it's right for those to be outside the function?
-        function_str = "def hole() : " + str(node) + " = {\n}"
+        function_str = "def hole() : " + str(node) + " = {\n"
         leon_call += function_str
-        leon_call += SPACE + str(choose) # node.get_choose().prune() ?? shouldn't be needed here
+        leon_call += SPACE + str(choose)
+        leon_call += "\n}"
+        # leon_call += SPACE + str(choose) # node.get_choose().prune() ?? shouldn't be needed here
         return leon_call
 
     def get_leon_call_func_non_hole(self, node, environment, outer_function, choose):
+        print("FUNC NON HOLE")
         # TODO separate thing for a hole func. need to come up with variable names
         leon_call = ""
 
@@ -52,9 +56,10 @@ class Visitor():
             envt_lines += 'val ' + name + ' = ' + str(value) + '\n'
         leon_call += envt_lines # hopefully it's right for those to be outside the function?
 
-        function_str = "def hole(" + node.get_function_arguments() + ") : " + str(node.get_func_type().get_ret_type()) + "{\n}"
+        function_str = "def hole(" + node.get_function_arguments() + ") : " + str(node.get_func_type().get_ret_type()) + "= {\n"
         if outer_function == None or outer_function.get_name() != node.get_name():
             function_str += str(choose.prune())
+            function_str += "\n}\n"
         else:
             new_choose = node.get_choose().prune()
             # termination measure is if any of the args is a list, it needs to be smaller
@@ -72,28 +77,31 @@ class Visitor():
                     termination_measure = TerminationMeasure(SIZE)
                     new_choose = termination_measure.add_to_choose(new_choose, outer_vars[i], renamed_current_var)
             function_str += SPACE + new_choose
+            function_str += "\n}\n"
         leon_call += function_str
         return leon_call
 
     def get_leon_call_hole_func(self, hole_type, environment, outer_function, choose):
         # TODO separate thing for a hole func. need to come up with variable names
         # hole_type is a FuncType
+        print("HOLE FUNC")
         leon_call = ""
         envt_lines = ""
         for name, value in environment.items():
             envt_lines += 'val ' + name + ' = ' + str(value) + '\n'
         leon_call += envt_lines # hopefully it's right for those to be outside the function?
-
-        function_str = "def hole(" + hole_type.get_function_arguments() + ") : " + str(hole_type.get_ret_type()) + "{\n}"
+        function_str = "def hole(" + hole_type.get_function_arguments() + ") : " + str(hole_type.get_ret_type()) + " = {\n"
 
         # now here is a problem: we don't know if the hole is recursive or not
         # we assume it's not
         # I guess should always prune just in case
         pruned_choose = choose.prune()
         function_str += str(pruned_choose)
+        function_str += "\n}\n"
         leon_call += function_str
         return leon_call
 
+    # TODO how to use other variables in the RHS of the choose? 
     def get_leon_call(self, node, environment, outer_function, choose):
         # TODO, execute bash script and read in from file
         # this might've been a bad idea to send the node, here, now need to type check again? would change that
@@ -108,7 +116,6 @@ class Visitor():
         leon_call += envt_lines # hopefully it's right for those to be outside the function?
 
         # choose stuff and termination stuff
-        print("node type " + node.get_node_type())
         if node.get_node_type() == HOLE:
             hole_type = node.get_type()
             if not hole_type.is_func_type():
@@ -267,14 +274,14 @@ class Visitor():
 
 if __name__ == '__main__':
     visitor = Visitor()
-    # node = Hole(FuncType([INT], INT))
+    node = Hole(FuncType([INT], INT))
     # TODO how to represent empty body?
     # node = Func("foo", FuncType([], INT), [], Int(0))
     # node = Hole(INT)
-    node = Hole(INT)
-    # environment = {"x" : Int(0)}
+    # node = Hole(INT)
+    # environment = {"x" : Int(0)} # environment works!
     environment = {}
     outer_function = None
-    choose = Choose(Tru(), Tru())
+    choose = Choose(ChooseLHS("res", INT), Tru())
     call = visitor.call_leon(node, environment, outer_function, choose)
     print(call)

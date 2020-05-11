@@ -412,6 +412,8 @@ class FuncType():
         return self.ret_type
     def get_node_type(self):
         return FUNC_TYPE
+    def is_func_type(self):
+        return True
 
 
 class Func(NonEmpty):
@@ -475,8 +477,6 @@ class CallFunc(NonEmpty):
         return self.vars
     def get_type(self, envt):
         return TArrow(var_types, ret_type)
-    def is_func_type(self):
-        True
     def prune(self, variables):
         # if using variables not in variables, return empty
         for variable in self.vars:
