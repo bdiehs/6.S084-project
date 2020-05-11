@@ -561,14 +561,23 @@ class If(NonEmpty):
         self.condition = condition
         self.true_case = true_case
         self.false_case = Tru() # for use in chooses
+    def add_tabs_body(self, body):
+        body_lines = str(body).split("\n") # BUG use of self.body?
+        if len(body_lines) == 0:
+            return ""
+        tabbed_body = ""
+        for line in body_lines[:-1]:
+            tabbed_body += SCALA_TAB + line + "\n"
+        tabbed_body += SCALA_TAB + body_lines[-1]
+        return tabbed_body
     def set_false_case(self, false_case):
         if self.false_case.get_node_type() == TRUE:
             self.false_case = false_case
         else:
             self.false_case.set_false_case(false_case)
     def __str__(self):
-        return "if (" + str(self.condition) + ") {\n" + str(self.true_case) + "\n}"\
-            + "else {\n" + str(self.false_case) + "\n}"
+        return "if (" + str(self.condition) + ") {\n" + self.add_tabs_body(self.true_case) + "\n}"\
+            + "else {\n" + self.add_tabs_body(self.false_case) + "\n}"
 
 class ChooseLHS(NonEmpty):
     def __init__(self, var_name, type):

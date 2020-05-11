@@ -17,7 +17,6 @@ class InputOutputExamples():
             return Eq(key, assignments[key]) if key != OUTPUT else Tru()
         first_name = list(assignments.keys())[0]
         if first_name != OUTPUT:
-            print("use first name " + first_name)
             first_assertion = Eq(first_name, assignments[first_name])
         del assignments[first_name]
         return And(first_assertion, self._make_big_and(assignments))
