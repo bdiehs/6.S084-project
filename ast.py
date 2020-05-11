@@ -320,7 +320,7 @@ class Cons(NonEmpty):
     def get_cdr(self):
         return self.cdr
     def __str__(self):
-        return "Cons " + str(self.car) + " " +  str(self.cdr)
+        return "Cons(" + str(self.car) + ", " +  str(self.cdr) + ")"
     def get_type(self, envt):
         return LIST
     def get_node_type(self):
@@ -552,7 +552,7 @@ class Tuple(NonEmpty):
     def get_vals(self):
         return self.vals
     def __str__(self):
-        return list_str(self.vals)
+        return "(" + list_str(self.vals) + ")"# might be types
     def get_type(self, envt):
         return TTuple([val.get_type() for val in self.vals])
     def get_node_type(self):
@@ -592,6 +592,8 @@ class If(NonEmpty):
             self.false_case = false_case
         else:
             self.false_case.set_false_case(false_case)
+    def get_node_type(self):
+        return IF
     def __str__(self):
         return "if (" + str(self.condition) + ") {\n" + self.add_tabs_body(self.true_case) + "\n}"\
             + "else {\n" + self.add_tabs_body(self.false_case) + "\n}"
