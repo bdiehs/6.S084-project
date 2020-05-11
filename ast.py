@@ -103,6 +103,16 @@ LIST = TList()
 BOOL = TBool()
 SET = TSet(INT)
 
+class VarNameGen:
+    def __init__(self):
+        self.num = 0
+    def get_name(self):
+        self.num += 1
+        return "_hole" + str(self.num)
+
+HOLE_NAME_GEN = VarNameGen()
+
+
 class Empty():
     # the empty node. nodes may become empty after pruning
     def __str__(self):
@@ -359,8 +369,9 @@ class Hole(NonEmpty):
     def __init__(self, type_):
         # primitive or FuncType
         self.type = type_
+        self.name = HOLE_NAME_GEN.get_name()
     def __str__(self):
-        return " ?? " # TODO figure this out. this is probably just for our debugging
+        return self.name # TODO figure this out. this is probably just for our debugging
     def get_type(self, envt = None):
         # if not a function, it can just be literally the type
         # if it is a function, I want the types of the args
@@ -373,11 +384,13 @@ class St(NonEmpty):
     def __init__(self, vals):
         self.vals = vals # Cons or Nil
     def __str__(self):
-        return str(self.vals)
+        return "Set(" + list_str(self.vals) + ")"
     def get_type(self, envt):
         return SET
     def get_node_type(self):
         return SET
+    def get_vals(self):
+        return self.vals
 
 class StPlus(NonEmpty):
     def __init__(self, left, right):
@@ -389,6 +402,10 @@ class StPlus(NonEmpty):
         return SET
     def get_node_type(self):
         return SET_PLUS
+    def get_left(self):
+        return self.left
+    def get_right(self):
+        return self.right
 
 class FuncType():
     def __init__(self, var_types, ret_type):
