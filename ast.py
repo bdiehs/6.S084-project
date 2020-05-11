@@ -547,8 +547,18 @@ class TupleAcc(NonEmpty):
     def get_node_type(self):
         return TUPLE_ACC
 
+class ChooseLHS(NonEmpty):
+    def __init__(self, var_name, type):
+        # must be passed in in same order
+        self.var_name = var_name
+        self.type = type
+    def __str__(self):
+        return "(" + str(self.var_name) + " : " + str(self.type) + ")"
+
+
 class Choose(NonEmpty):
     def __init__(self, lhs, rhs):
+        # LHS must be ChooseLHS
         self.lhs = lhs
         self.rhs = rhs
     def get_lhs(self):
@@ -571,7 +581,7 @@ class Choose(NonEmpty):
         # def split(list : List) : (List,List) = {
         # choose { (res : (List,List)) => splitSpec(list, res) }
         # }
-        # OBSERVE THAT CHOOSE GOES ON THE INSIDE 
+        # OBSERVE THAT CHOOSE GOES ON THE INSIDE
         return "choose {" + str(self.lhs) + " => " + str(self.rhs) + "}"
     def get_type(self):
         return BOOL # I think? should it be its own type?
@@ -585,7 +595,7 @@ class Harness(Func):
         self.vars = vars_
         self.var_types = var_types
         self.ret_type = ret_type
-        self.choose = ensuring # TODO we need to prune variables that are from outer calls
+        self.choose = choose # TODO we need to prune variables that are from outer calls
         self.body = body
     def get_name(self):
         return self.name
