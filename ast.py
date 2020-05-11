@@ -27,6 +27,9 @@ SET_PLUS = "SET PLUS"
 TUPLE = "TUPLE"
 TUPLE_ACC = "TUPLE ACC"
 HARNESS = "HARNESS"
+IF = "IF"
+ELSE = "ELSE"
+ELSE_IF = "ELSE IF"
 
 SCALA_TAB = "  "
 EMPTY = "EMPTY"
@@ -552,6 +555,20 @@ class TupleAcc(NonEmpty):
         return self.tuple.get_type()[self.idx]
     def get_node_type(self):
         return TUPLE_ACC
+
+class If(NonEmpty):
+    def __init__(self, condition, true_case):
+        self.condition = condition
+        self.true_case = true_case
+        self.false_case = Tru() # for use in chooses
+    def set_false_case(self, false_case):
+        if self.false_case.get_node_type() == TRUE:
+            self.false_case = false_case
+        else:
+            self.false_case.set_false_case(false_case)
+    def __str__(self):
+        return "if (" + str(self.condition) + ") {\n" + str(self.true_case) + "\n}"\
+            + "else {\n" + str(self.false_case) + "\n}"
 
 class ChooseLHS(NonEmpty):
     def __init__(self, var_name, type):
