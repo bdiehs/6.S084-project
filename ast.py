@@ -21,7 +21,7 @@ FUNC_TYPE = "FUNC TYPE"
 LET_IN = "LET IN"
 APP = "APP"
 HOLE = "HOLE"
-ENSURING = "ENSURING"
+CHOOSE = "CHOOSE"
 SET = "SET"
 SET_PLUS = "SET PLUS"
 HARNESS = "HARNESS"
@@ -440,7 +440,7 @@ class Func(NonEmpty):
         arguments += str(self.vars[-1]) + " : " + str(var_types[-1])
         return arguments
     def add_tabs_body(self, body):
-        body_lines = str(self.body).split("\n")
+        body_lines = str(body).split("\n") # BUG use of self.body?
         if len(body_lines) == 0:
             return ""
         tabbed_body = ""
@@ -547,7 +547,7 @@ class TupleAcc(NonEmpty):
     def get_node_type(self):
         return TUPLE_ACC
 
-class Ensuring(NonEmpty):
+class Choose(NonEmpty):
     def __init__(self, lhs, rhs):
         self.lhs = lhs
         self.rhs = rhs
@@ -568,20 +568,24 @@ class Ensuring(NonEmpty):
         # return Tru() if rhs_pruned.is_empty() else rhs_pruned
         # TODO think about whether or not this should get mutated
     def __str__(self):
-        return "ensuring(" + str(self.lhs) + " => " + str(self.rhs) + ")"
+        # def split(list : List) : (List,List) = {
+        # choose { (res : (List,List)) => splitSpec(list, res) }
+        # }
+        # OBSERVE THAT CHOOSE GOES ON THE INSIDE 
+        return "choose {" + str(self.lhs) + " => " + str(self.rhs) + "}"
     def get_type(self):
         return BOOL # I think? should it be its own type?
     def get_node_type(self):
-        return ENSURING
+        return CHOOSE
 
 class Harness(Func):
     # for termination measure purposes, I want choose_cond to be very easy to change
-    def __init__(self, name, var_types, ret_type, vars_, ensuring, body):
+    def __init__(self, name, var_types, ret_type, vars_, choose, body):
         self.name = name
         self.vars = vars_
         self.var_types = var_types
         self.ret_type = ret_type
-        self.ensuring = ensuring # TODO we need to prune variables that are from outer calls
+        self.choose = ensuring # TODO we need to prune variables that are from outer calls
         self.body = body
     def get_name(self):
         return self.name
@@ -591,13 +595,13 @@ class Harness(Func):
         return self.ret_type
     def get_vars(self):
         return self.vars
-    def get_ensuring(self):
-        return self.ensuring
+    def get_choose(self):
+        return self.choose
     def get_body(self):
         return self.body
     def __str__(self):
         return "def " + self.name + " (" + self.get_function_arguments() + ") " + ": "\
-            + str(self.ret_type) + ' = {\n' + self.add_tabs_body(self.body) + "\n} " + str(self.ensuring)
+            + str(self.ret_type) + ' = {\n' + self.add_tabs_body(self.body) + "\n} " + str(self.choose)
     def prune(self):
         # need to update the choose RHS
         # use the variables that all the way to the left, the arguments to the function
