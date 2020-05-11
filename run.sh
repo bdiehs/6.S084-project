@@ -11,6 +11,6 @@ tail -n +$x out.txt > tmp.txt
 echo "Wrote program to tmp.txt"
 echo "Cleaning up program..."
 sed 's/\[.*\] //' tmp.txt > output_program.scala
-# rm tmp.txt
-# rm out.txt
-echo "Wrote program to program.scala. Done."
+rm tmp.txt
+rm out.txt
+echo "Wrote program to output_program.scala. Done."
