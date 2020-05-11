@@ -1,9 +1,14 @@
 from ast import *
+import subprocess
 ARITHMETIC_OPERATIONS = {PLUS, MINUS, LT, LEQ, EQ}
 ARITHMETIC_OPERATIONS_SYMBOLS = {PLUS : '+', MINUS : '-', LT : '<', LEQ : '<=', EQ : '='}
 TWO_BOOLEAN_OPERATIONS = {AND, OR}
 BOOLEAN_OPERATIONS_SYMBOLS = {AND : "&&", OR : "||"}
 SPACE = " "
+
+LEON_IMPORTS = "import leon.annotation._\nimport leon.lang._\nimport leon.lang.synthesis._\n\n"
+DECLARE_OBJECT = "object Complete {\n"
+CLOSE_OBJECT = "\n}"
 
 SIZE_CONS_CASE = ConsCase("_", "rest", Plus(Int(1), App(Var('size'), [Var('rest')])))
 SIZE = Func('size', FuncType([LIST], INT), ['lst'],
@@ -114,8 +119,23 @@ class Visitor():
 
     def call_leon(self, node, environment, outer_function, ensuring):
         leon_call = self.get_leon_call(node, environment, outer_function, ensuring)
+        leon_call = LEON_IMPORTS + DECLARE_OBJECT + leon_call + CLOSE_OBJECT
         # TODO actually run the script
-        return leon_call # for now
+        # have program string from leon_call
+        # write that to a file
+        # run the bash script which writes a program to file, read in from that file
+        # need to write to file that bash script reads in from.
+        f = open("input_program.txt", "w")
+        f.write(leon_call)
+        f.close()
+
+        subprocess.run("./run.sh")
+
+        result_file = open("output_program.scala", "r")
+        result_program = result_file.read()
+        result_file.close()
+        # at the highest level (harness), we probably want to write our string to a file too
+        return result_program # for now
     def on(self, node, can_call_leon = True, environment = {}, outer_function = None, ensuring = None):
         # if there was a hole in a subtree and the node couldn't get a program for itself,
         # need to pass that info up to parent
@@ -239,9 +259,10 @@ if __name__ == '__main__':
     # TODO how to represent empty body?
     # node = Func("foo", FuncType([], INT), [], Int(0))
     # node = Hole(INT)
-    node = Plus(Hole(INT), Int(5))
-    environment = {"x" : Int(0)}
+    node = Hole(INT)
+    # environment = {"x" : Int(0)}
+    environment = {}
     outer_function = None
-    ensuring = Ensuring(Flse(), Tru())
-    call = visitor.get_leon_call(node, environment, outer_function, ensuring)
+    ensuring = Ensuring(Tru(), Tru())
+    call = visitor.call_leon(node, environment, outer_function, ensuring)
     print(call)
