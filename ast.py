@@ -24,6 +24,8 @@ HOLE = "HOLE"
 CHOOSE = "CHOOSE"
 SET = "SET"
 SET_PLUS = "SET PLUS"
+TUPLE = "TUPLE"
+TUPLE_ACC = "TUPLE ACC"
 HARNESS = "HARNESS"
 
 SCALA_TAB = "  "
@@ -104,7 +106,9 @@ SET = TSet(INT)
 class Empty():
     # the empty node. nodes may become empty after pruning
     def __str__(self):
-        return "()" # just for debugging
+        return "" # just for debugging
+    def get_node_type(self):
+        return EMPTY
     def get_type(self):
         return EMPTY # just for debugging
     def is_empty(self):
@@ -113,6 +117,8 @@ class Empty():
 class NonEmpty():
     def is_empty(self):
         return False
+    def accept(self, visitor):
+        return visitor.on(self)
 
 class Var(NonEmpty):
     # I know we have the problem of variables that are inputs in functions,

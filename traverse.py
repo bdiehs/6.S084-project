@@ -55,7 +55,6 @@ class Visitor():
         for name, value in environment.items():
             envt_lines += 'val ' + name + ' = ' + str(value) + '\n'
         leon_call += envt_lines # hopefully it's right for those to be outside the function?
-
         function_str = "def hole(" + node.get_function_arguments() + ") : " + str(node.get_func_type().get_ret_type()) + "= {\n"
         if outer_function == None or outer_function.get_name() != node.get_name():
             function_str += str(choose.prune())
@@ -101,7 +100,7 @@ class Visitor():
         leon_call += function_str
         return leon_call
 
-    # TODO how to use other variables in the RHS of the choose? 
+    # TODO how to use other variables in the RHS of the choose?
     def get_leon_call(self, node, environment, outer_function, choose):
         # TODO, execute bash script and read in from file
         # this might've been a bad idea to send the node, here, now need to type check again? would change that
@@ -156,17 +155,15 @@ class Visitor():
         # at the highest level (harness), we probably want to write our string to a file too
         return result_program # for now
     def on(self, node, can_call_leon = True, environment = {}, outer_function = None, choose = None):
-        # if there was a hole in a subtree and the node couldn't get a program for itself,
-        # need to pass that info up to parent
-        # return (string for program, boolean) ?
-        # return string or None ?
+        if node.get_node_type() == EMPTY:
+            return str(node)
         if node.get_node_type() == VAR:
             return str(node)
         if node.get_node_type() == INT:
             return str(node)
         if node.get_node_type() in ARITHMETIC_OPERATIONS:
-            left = on(node.get_left(), can_call_leon = False, environment = environment, outer_function = outer_function, choose = choose)
-            right = on(node.get_right(), can_call_leon = False, environment = environment, outer_function = outer_function, choose = choose)
+            left = self.on(node.get_left(), can_call_leon = False, environment = environment, outer_function = outer_function, choose = choose)
+            right = self.on(node.get_right(), can_call_leon = False, environment = environment, outer_function = outer_function, choose = choose)
 
             if (left == None or right == None) and (not can_call_leon):
                 return None
@@ -178,8 +175,8 @@ class Visitor():
             # at least one is None and can call leon: do it
             return self.call_leon(node, environment, outer_function, choose)
         if node.get_node_type() in TWO_BOOLEAN_OPERATIONS:
-            left = on(node.get_left(), can_call_leon = False, environment = environment, outer_function = outer_function, choose = choose)
-            right = on(node.get_right(), can_call_leon = False, environment = environment, outer_function = outer_function, choose = choose)
+            left = self.on(node.get_left(), can_call_leon = False, environment = environment, outer_function = outer_function, choose = choose)
+            right = self.on(node.get_right(), can_call_leon = False, environment = environment, outer_function = outer_function, choose = choose)
 
             if (left == None or right == None) and (not can_call_leon):
                 return None
@@ -189,7 +186,7 @@ class Visitor():
                 return None
             return self.call_leon(node, environment, outer_function, choose)
         if node.get_node_type() == NOT:
-            child = on(node.get_child(), can_call_leon = can_call_leon, environment = environment, outer_function = outer_function, choose = choose)
+            child = self.on(node.get_child(), can_call_leon = can_call_leon, environment = environment, outer_function = outer_function, choose = choose)
             if child != None:
                 return child
             if child == None and (not can_call_leon):
@@ -198,8 +195,8 @@ class Visitor():
         if node.get_node_type() == FALSE or node.get_node_type == TRUE:
             return str(node)
         if node.get_node_type() == CONS:
-            car = on(node.get_car(), can_call_leon = can_call_leon, environment = environment, outer_function = outer_function, choose = choose)
-            cdr = on(node.get_cdr(), can_call_leon = can_call_leon, environment = environment, outer_function = outer_function, choose = choose)
+            car = self.on(node.get_car(), can_call_leon = can_call_leon, environment = environment, outer_function = outer_function, choose = choose)
+            cdr = self.on(node.get_cdr(), can_call_leon = can_call_leon, environment = environment, outer_function = outer_function, choose = choose)
             if car != None and cdr != None:
                 return "Cons " + car + SPACE + cdr
             if not can_call_leon:
@@ -209,9 +206,9 @@ class Visitor():
             return str(node)
         if node.get_node_type() == MATCH:
             # TODO add cons case to other stuff? or nah... should never exist in the wild
-            match_on = on(node.get_match_on(), can_call_leon = False, environment = environment, outer_function = outer_function, choose = choose)
-            nil_case = on(node.get_nil_case(), can_call_leon = False, environment = environment, outer_function = outer_function, choose = choose)
-            cons_case = on(node.get_cons_case(), can_call_leon = False, environment = environment, outer_function = outer_function, choose = choose)
+            match_on = self.on(node.get_match_on(), can_call_leon = False, environment = environment, outer_function = outer_function, choose = choose)
+            nil_case = self.on(node.get_nil_case(), can_call_leon = False, environment = environment, outer_function = outer_function, choose = choose)
+            cons_case = self.on(node.get_cons_case(), can_call_leon = False, environment = environment, outer_function = outer_function, choose = choose)
             if match_on != None and nil_case != None and cons_case != None:
                 result = match_on + " match {\n" + SCALA_TAB
                 result += "case Nil => " + nil_case + "\n" + SCALA_TAB
@@ -228,7 +225,7 @@ class Visitor():
             if outer_function != None and node.get_name() == outer_function.get_name():
                 # recursive call, must handle measure stuff
                 pass # TODO fix termination which is currently broken
-            body = on(node.get_body(), can_call_leon = can_call_leon, environment = environment, outer_function = node, choose = choose)
+            body = self.on(node.get_body(), can_call_leon = can_call_leon, environment = environment, outer_function = node, choose = choose)
             if body != None:
                 return body
             if not can_call_leon:
@@ -238,13 +235,13 @@ class Visitor():
             return str(node)
         # TODO app
         if node.get_node_type() == LET_IN:
-            val = on(node.get_val(), can_call_leon = can_call_leon, environment = environment, outer_function = outer_function, choose = choose)
+            val = self.on(node.get_val(), can_call_leon = can_call_leon, environment = environment, outer_function = outer_function, choose = choose)
             environment[node.get_var_name()] = val
-            body = on(node.get_body(), can_call_leon = can_call_leon, environment = environment, outer_function = outer_function, choose = choose)
+            body = self.on(node.get_body(), can_call_leon = can_call_leon, environment = environment, outer_function = outer_function, choose = choose)
             if val != None and body != None:
                 return 'val ' + node.get_var_name() + ' = ' + val + '\n' + self.body
         if node.get_node_type() == TUPLE:
-            new_vals = [on(val, can_call_leon, environment, outer_function) for val in node.get_vals()]
+            new_vals = [self.on(val, can_call_leon, environment, outer_function) for val in node.get_vals()]
             if None not in new_vals:
                 return list_str(new_vals)
             if not can_call_leon:
@@ -252,7 +249,7 @@ class Visitor():
             return self.call_leon(node, can_call_leon, environment, outer_function, choose)
         if node.get_node_type() == TUPLE_ACC:
             # do we need everything in the tuple to be resolvable? probably.
-            new_vals = [on(val, can_call_leon, environment, outer_function) for val in node.get_vals()]
+            new_vals = [self.on(val, can_call_leon, environment, outer_function) for val in node.get_vals()]
             if None not in new_vals:
                 return "(" + list_str(new_vals) + ")" + '[' + str(node.get_idx()) + ']'
             if not can_call_leon:
@@ -262,10 +259,9 @@ class Visitor():
             # do I have to prune stuff here?
             return str(node) # there's never any holes in an choose, right?
         if node.get_node_type() == HARNESS:
-            new_body = on(node.get_body(), can_call_leon = True, environment = {}, outer_function = None, choose = node.get_choose())
-            choose = on(node.get_choose(), can_call_leon = True, environment = {}, outer_function = None, choose = node.get_choose())
+            new_body = self.on(node.get_body(), can_call_leon = True, environment = {}, outer_function = None, choose = node.get_choose())
             return "def " + node.get_name() + " (" + node.get_function_arguments() + ") " + ": "\
-                + str(self.ret_type) + ' = {\n' + node.add_tabs_body(new_body) + "\n} " + choose
+                + str(node.ret_type) + ' = {\n' + node.add_tabs_body(new_body) + str(node.get_choose()) + "\n} " 
         if node.get_node_type() == HOLE:
             # are we inside a recursive call? need to do measure stuff and pruning
             if not can_call_leon:
@@ -274,14 +270,22 @@ class Visitor():
 
 if __name__ == '__main__':
     visitor = Visitor()
-    node = Hole(FuncType([INT], INT))
+    # node = Hole(FuncType([INT], INT))
     # TODO how to represent empty body?
-    # node = Func("foo", FuncType([], INT), [], Int(0))
-    # node = Hole(INT)
-    # node = Hole(INT)
-    # environment = {"x" : Int(0)} # environment works!
-    environment = {}
-    outer_function = None
+    # node = Func("foo", FuncType([INT], INT), ["x"], Int(0))
+    # # node = Hole(INT)
+    # # node = Hole(INT)
+    # # environment = {"x" : Int(0)} # environment works!
+    # environment = {}
+    # outer_function = None
+    # choose = Choose(ChooseLHS("res", INT), Tru()) # want to say res = input * 2
+    # call = visitor.call_leon(node, environment, outer_function, choose)
+    # print(call)
+
+    # traversing tree w/ harness
     choose = Choose(ChooseLHS("res", INT), Tru())
-    call = visitor.call_leon(node, environment, outer_function, choose)
-    print(call)
+    # need empty body
+    harness = Harness("foo", [], INT, [], choose, Empty())
+    result = harness.accept(visitor)
+    print(result)
+    # TODO actually call leon
