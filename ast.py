@@ -555,12 +555,11 @@ class TupleAcc(NonEmpty):
 
 class ChooseLHS(NonEmpty):
     def __init__(self, var_name, type):
-        # must be passed in in same order
+        # must be same as output type
         self.var_name = var_name
         self.type = type
     def __str__(self):
         return "(" + str(self.var_name) + " : " + str(self.type) + ")"
-
 
 class Choose(NonEmpty):
     def __init__(self, lhs, rhs):
@@ -615,6 +614,16 @@ class Harness(Func):
         return self.choose
     def get_body(self):
         return self.body
+    def get_function_arguments(self):
+        if len(self.vars) == 0:
+            return ""
+
+        arguments = ""
+        var_types = self.var_types
+        for i in range(len(self.vars) -1):
+            arguments += str(self.vars[i]) + " : " + str(self.var_types[i]) + ", "
+        arguments += str(self.vars[-1]) + " : " + str(self.var_types[-1])
+        return arguments
     def __str__(self):
         return "def " + self.name + " (" + self.get_function_arguments() + ") " + ": "\
             + str(self.ret_type) + ' = {\n' + self.add_tabs_body(self.body) + "\n} " + str(self.choose)

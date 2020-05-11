@@ -301,8 +301,8 @@ if __name__ == '__main__':
     # print(call)
 
     # traversing tree w/ harness
-    choose = Choose(ChooseLHS("res", INT), Tru())
+    choose = Choose(ChooseLHS("res", INT), Eq("res", Plus(Int(1), "x")))
     # need empty body
-    harness = Harness("foo", [], INT, [], choose, Empty())
+    harness = Harness("foo", [INT], INT, ["x"], choose, Empty())
     result = harness.accept(visitor)
     print(result)
