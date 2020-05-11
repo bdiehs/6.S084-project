@@ -134,6 +134,22 @@ class Visitor():
             else:
                 return self.get_leon_call_func_non_hole(node, environment, outer_function, choose)
 
+    def harness_call_leon(self, input_program):
+        # this is not SFB
+        leon_call = input_program
+        leon_call = self.add_tabs_body(leon_call)
+        leon_call = LEON_IMPORTS + DECLARE_OBJECT + leon_call + CLOSE_OBJECT
+
+        f = open("input_program.txt", "w")
+        f.write(leon_call)
+        f.close()
+
+        subprocess.run("./run.sh")
+
+        result_file = open("output_program.scala", "r")
+        result_program = result_file.read()
+        result_file.close()
+
     def call_leon(self, node, environment, outer_function, choose):
         leon_call = self.get_leon_call(node, environment, outer_function, choose)
         leon_call = self.add_tabs_body(leon_call)
@@ -260,8 +276,10 @@ class Visitor():
             return str(node) # there's never any holes in an choose, right?
         if node.get_node_type() == HARNESS:
             new_body = self.on(node.get_body(), can_call_leon = True, environment = {}, outer_function = None, choose = node.get_choose())
-            return "def " + node.get_name() + " (" + node.get_function_arguments() + ") " + ": "\
-                + str(node.ret_type) + ' = {\n' + node.add_tabs_body(new_body) + str(node.get_choose()) + "\n} " 
+            input_program = "def " + node.get_name() + " (" + node.get_function_arguments() + ") " + ": "\
+                + str(node.ret_type) + ' = {\n' + node.add_tabs_body(new_body) + str(node.get_choose()) + "\n} "
+            # TODO for harness, need to actually call leon!
+            return self.harness_call_leon(input_program)
         if node.get_node_type() == HOLE:
             # are we inside a recursive call? need to do measure stuff and pruning
             if not can_call_leon:
@@ -288,4 +306,3 @@ if __name__ == '__main__':
     harness = Harness("foo", [], INT, [], choose, Empty())
     result = harness.accept(visitor)
     print(result)
-    # TODO actually call leon
