@@ -7,47 +7,24 @@ object Complete {
   case class Cons(head: BigInt, tail: List) extends List
   case object Nil extends List
 
-  def size(l: List) : BigInt = (l match {
-    case Nil => BigInt(0)
-    case Cons(_, t) => BigInt(1) + size(t)
-  }) ensuring(res => res >= 0)
-
-  def content(l: List): Set[BigInt] = l match {
-    case Nil => Set.empty[BigInt]
-    case Cons(i, t) => Set(i) ++ content(t)
-  }
-
-
-  def split (lst : List) : (List, List) = {
-    choose {(res : (List, List)) =>
-      if (lst == Nil) {
-        res == ((Nil, Nil))
-      } else {
-        if (lst == Cons(BigInt(0), Nil)) {
-          res == ((Cons(BigInt(0), Nil), Nil))
-        } else {
-          if (lst == (Cons(BigInt(0), Cons(BigInt(1), Nil)))) { 
-            res == ((Cons(BigInt(0), Nil), Cons(BigInt(1), Nil)))
-          } else {
-            if (lst == (Cons(BigInt(0), Cons(BigInt(1), Cons(BigInt(2), Nil))))) { 
-            res == ((Cons(BigInt(0), Cons(BigInt(2), Nil)), Cons(BigInt(1), Nil)))
-           } else 
-             if (lst == (Cons(BigInt(0), Cons(BigInt(1), Cons(BigInt(2), Cons(BigInt(3), Nil)))))) {
-               res == ((Cons(BigInt(0), Cons(BigInt(2), Nil))), (Cons(BigInt(1), Cons(BigInt(3), Nil))))
-             } else {
-               true 
-             }
-          }
-        }
-      }
-
-
-    //lst match { 
-    //  case Nil => (res) == ((Nil, Nil))
-    //  case Cons(BigInt(0), Nil) => (res) == ((Cons(BigInt(0), Nil), Nil))
-    //  case Cons(BigInt(0), Cons(BigInt(1), Nil)) => (res) == ((Cons(BigInt(0), Nil), Cons(BigInt(1), Nil)))
-    //  case _ => true
-    //}
+  def size (lst : List) : Int = {
+    lst match {
+      case Nil => 0
+      case Cons(_, rest) => 
+        (1) + (size(rest))
     }
-  } 
+  }
+  def content (lst : List) : Set[BigInt] = {
+    lst match {
+      case Nil => Set()
+      case Cons(e, rest) => 
+        (Set(e)) ++ (content(rest))
+    }
+  }
+  def hole(lst : List) : (List, List)= {
+  choose {(r : (List, List)) => (content(lst)) == ((content(r._1)) ++ (content(r._2))) && (size(lst) == (size(r._1) + size(r._2)))
+							 .&& ((size(r._1) - size(r._2)) == 1 || (size(r._2) - size(r._1) == 1) 
+							 .|| (size(r._1) - size(r._2) == 0))}
+  }
+  
 }
