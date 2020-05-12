@@ -8,6 +8,7 @@ SPACE = " "
 
 LEON_IMPORTS = "import leon.annotation._\nimport leon.lang._\nimport leon.lang.synthesis._\n\n"
 DECLARE_OBJECT = "object Complete {\n"
+DECLARE_LISTS = "sealed abstract class List\ncase class Cons(head: BigInt, tail: List) extends List\ncase object Nil extends List\n"
 CLOSE_OBJECT = "\n}"
 
 SIZE_CONS_CASE = ConsCase("_", "rest", Plus(Int(1), App(Var('size'), [Var('rest')])))
@@ -30,14 +31,22 @@ class Visitor():
         tabbed_body += SCALA_TAB + body_lines[-1]
         return tabbed_body
 
+    def _get_environment_lines(self, environment):
+        envt_lines = ""
+        for name, value in environment.items():
+            # we don't want the val thing if it's a function
+            if value.get_node_type() != FUNC:
+                envt_lines += 'val ' + name + ' = ' + str(value) + '\n'
+            else:
+                envt_lines += str(value) + '\n'
+        return envt_lines
+
     def get_leon_call_non_func(self, hole_name, node, environment, choose):
         # not a hole. could be from inside a hole. not a function.
         # get everything for leon call after the environment?
         print("NON FUNC")
         leon_call = ""
-        envt_lines = ""
-        for name, value in environment.items():
-            envt_lines += 'val ' + name + ' = ' + str(value) + '\n'
+        envt_lines = self._get_environment_lines(environment)
         leon_call += envt_lines # hopefully it's right for those to be outside the function?
         function_str = "def " + hole_name + "() : " + str(node) + " = {\n"
         leon_call += function_str
@@ -51,9 +60,7 @@ class Visitor():
         # TODO separate thing for a hole func. need to come up with variable names
         leon_call = ""
 
-        envt_lines = ""
-        for name, value in environment.items():
-            envt_lines += 'val ' + name + ' = ' + str(value) + '\n'
+        envt_lines = self._get_environment_lines(environment)
         leon_call += envt_lines # hopefully it's right for those to be outside the function?
         function_str = "def hole(" + node.get_function_arguments() + ") : " + str(node.get_func_type().get_ret_type()) + "= {\n"
         if  outer_function == None or outer_function.get_name() != node.get_name():
@@ -85,9 +92,7 @@ class Visitor():
         # hole_type is a FuncType
         print("HOLE FUNC")
         leon_call = ""
-        envt_lines = ""
-        for name, value in environment.items():
-            envt_lines += 'val ' + name + ' = ' + str(value) + '\n'
+        envt_lines = self._get_environment_lines(environment)
         leon_call += envt_lines # hopefully it's right for those to be outside the function?
         function_str = "def " + hole_name + "(" + hole_type.get_function_arguments() + ") : " + str(hole_type.get_ret_type()) + " = {\n"
 
@@ -109,9 +114,7 @@ class Visitor():
         # need to apply the choose
         # need to use the environment. need to build up lines of vals for that DONE
         leon_call = ""
-        envt_lines = ""
-        for name, value in environment.items():
-            envt_lines += 'val ' + name + ' = ' + str(value) + '\n'
+        envt_lines = self._get_environment_lines(environment)
         leon_call += envt_lines # hopefully it's right for those to be outside the function?
 
         # choose stuff and termination stuff
@@ -135,10 +138,10 @@ class Visitor():
                 return self.get_leon_call_func_non_hole(node, environment, outer_function, choose)
 
     def harness_call_leon(self, input_program):
-        # this is not SFB
+        # this is not SFB or RFC
         leon_call = input_program
         leon_call = self.add_tabs_body(leon_call)
-        leon_call = LEON_IMPORTS + DECLARE_OBJECT + leon_call + CLOSE_OBJECT
+        leon_call = LEON_IMPORTS + DECLARE_OBJECT + DECLARE_LISTS + leon_call + CLOSE_OBJECT
 
         f = open("input_program.txt", "w")
         f.write(leon_call)
@@ -153,7 +156,7 @@ class Visitor():
     def call_leon(self, node, environment, outer_function, choose):
         leon_call = self.get_leon_call(node, environment, outer_function, choose)
         leon_call = self.add_tabs_body(leon_call)
-        leon_call = LEON_IMPORTS + DECLARE_OBJECT + leon_call + CLOSE_OBJECT
+        leon_call = LEON_IMPORTS + DECLARE_OBJECT + DECLARE_LISTS + leon_call + CLOSE_OBJECT
         # TODO actually run the script
         # have program string from leon_call
         # write that to a file

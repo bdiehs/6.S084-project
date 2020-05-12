@@ -10,6 +10,7 @@ size = Func('size', FuncType([LIST], INT) , ['lst'],
     )
 )
 
+# sets in scala need to have type. TODO
 content = Func('content', FuncType([LIST], SET) , ['lst'],
     Match(Var('lst'),
         St([]),
@@ -20,7 +21,7 @@ content = Func('content', FuncType([LIST], SET) , ['lst'],
 
 split_spec = Choose(ChooseLHS('r', TTuple([LIST, LIST])),
 	Eq(content.get_call(['lst']),
-		StPlus(content.get_call([TupleAcc(Var('r'), 0)]), content.get_call([TupleAcc(Var('r'), 1)]))))
+		StPlus(content.get_call([TupleAcc(Var('r'), 1)]), content.get_call([TupleAcc(Var('r'), 2)]))))
 
 split0 = Harness('split', [LIST], TTuple([LIST, LIST]), ['lst'], split_spec,
 	Match(Var('lst'),

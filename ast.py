@@ -58,13 +58,14 @@ class TList(NonFuncType):
     def __str__(self):
         return "List"
 
+# TODO for now we assume all sets are of type integer
 class TSet(NonFuncType):
     def __init__(self, type_):
         pass
     def get_type(self):
         return "SET"
     def __str__(self):
-        return "Set"
+        return "Set[BigInt]" # TODO CHANGE
 
 class TInt(NonFuncType):
     def __init__(self):
@@ -560,14 +561,16 @@ class Tuple(NonEmpty):
 
 class TupleAcc(NonEmpty):
     def __init__(self, tup, idx):
+        if idx == 0:
+            raise Exception("Trying to access a tuple at index 0")
         self.tuple = tup
-        self.idx = idx
+        self.idx = idx # note that scala uses one indexing!
     def get_tuple(self):
         return self.tuple
     def get_idx(self):
         return self.idx
     def __str__(self):
-        return str(self.tuple) + '[' + str(self.idx) + ']'
+        return str(self.tuple) + "._" + str(self.idx)
     def get_type(self, envt):
         return self.tuple.get_type()[self.idx]
     def get_node_type(self):
