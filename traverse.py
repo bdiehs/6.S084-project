@@ -12,10 +12,19 @@ DECLARE_LISTS = "sealed abstract class List\ncase class Cons(head: BigInt, tail:
 CLOSE_OBJECT = "\n}"
 
 SIZE_CONS_CASE = ConsCase("_", "rest", Plus(Int(1), App(Var('size'), [Var('rest')])))
-SIZE = Func('size', FuncType([LIST], INT), ['lst'],
+
+SIZE = Func('size', FuncType([LIST], INT) , ['lst'],
     Match(Var('lst'),
         Int(0),
-        SIZE_CONS_CASE)
+        ConsCase('_', 'rest', Plus(Int(1), CallFunc('size', [Var('rest')], INT)))
+    )
+)
+
+CONTENT = Func('content', FuncType([LIST], SET) , ['lst'],
+    Match(Var('lst'),
+        St([]),
+        ConsCase('e', 'rest', StPlus(St([Var('e')]), CallFunc('content', [Var('rest')], SET)))
+    )
 )
 
 def get_hole_number():
@@ -33,8 +42,15 @@ class Visitor():
     def __init__(self, environment, outer_function):
         self.environment = environment
         self.outer_function = outer_function
-        self.defined_functions = set() # hackier way would be to just add to big string w/ newlines
+        self.defined_functions = {str(SIZE), str(CONTENT)} # hackier way would be to just add to big string w/ newlines
         # ideally would add content and size to this set
+
+    def _get_defined_functions_lines(self):
+        lines = ""
+        for defined_function in self.defined_functions:
+            lines += defined_function + "\n\n"
+        return lines
+
     def add_tabs_body(self, body):
         body_lines = str(body).split("\n")
         if len(body_lines) == 0:
@@ -118,7 +134,7 @@ class Visitor():
         leon_call = input_program
         print("(harness) Going to call Leon with\n", leon_call)
         leon_call = self.add_tabs_body(leon_call)
-        leon_call = LEON_IMPORTS + DECLARE_OBJECT + DECLARE_LISTS + leon_call + CLOSE_OBJECT
+        leon_call = LEON_IMPORTS + DECLARE_OBJECT + DECLARE_LISTS + self._get_defined_functions_lines() + leon_call + CLOSE_OBJECT
 
         f = open("input_program.txt", "w")
         f.write(leon_call)
@@ -298,7 +314,12 @@ class Visitor():
                 + str(node.ret_type) + ' = {\n' + node.add_tabs_body(new_body) + str(node.get_choose()) + "\n} "
             # TODO for harness, need to actually call leon!
             # does not have environment
-            return self.harness_call_leon(input_program)
+            # if body was empty, whole program was hole, must make
+            # if node.get_body().is_empty():
+            #     return self.harness_call_leon(input_program)
+            # TODO need to add self.defined_functions to the top of the program
+            return self.harness_call_leon(input_program) # TODO need a few changes to what this does
+            # return input_program
         if node.get_node_type() == HOLE:
             # are we inside a recursive call? need to do measure stuff and pruning
             if not can_call_leon:
