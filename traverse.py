@@ -55,29 +55,12 @@ class Visitor():
             print("HOLE, FUNC")
             return "def " + hole_name + "(" + hole_type.get_function_arguments() + ") : " + str(hole_type.get_ret_type()) + " = {\n"
         if node.get_node_type() != FUNC:
-            # need variable name
             print("NON HOLE, NON FUNC")
             # non hole, non functional
-            # have to come up w/ args TODO
-            if node.get_node_type() != MATCH: # I think match is only special case
-                print("not match, simple")
-                name_and_args = "def hole()"
-            else:
-                # we only match on lists
-                print("MATCH")
-                name_and_args = "def hole(" + str(node.get_match_on()) + " : List" + ")"
             return "def hole(" + variable_name + " : " + str(node.get_type())  + ")" + " : " + str(node.get_type(environment)) + " = {\n"
-        # non hole, non functional
+        # non hole, functional
         print("NON HOLE, FUNC")
-        # print(node.get_cons_case)
-        # I think it must be Nil or ConsCase here
-        print("node type " + str(node.get_node_type()))
-        print("below attempt to print")
-        if node.get_node_type() == CONS_CASE:
-            arg_str = "cons : List" # I think you can't specify it's a cons?
-        else:
-            arg_str = "nil : List" # TODO try making this nil?
-        return "def hole(" + arg_str + ") : " + str(node.get_func_type().get_ret_type()) + "= {\n"
+        return "def hole(" + hole_type.get_function_arguments() + ") : " + str(node.get_func_type().get_ret_type()) + "= {\n"
 
     def get_choose_func_non_hole(self, node, outer_function, choose):
         if outer_function == None or outer_function.get_name() != node.get_name():
