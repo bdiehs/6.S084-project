@@ -19,9 +19,16 @@ content = Func('content', FuncType([LIST], SET) , ['lst'],
 )
 
 # TODO change this to have size requirements
+content_equal = Eq(content.get_call(['lst']),
+    StPlus(content.get_call([TupleAcc(Var('r'), 1)]), content.get_call([TupleAcc(Var('r'), 2)])))
+one_greater = Eq(Minus(size.get_call([TupleAcc(Var('r'), 1)]), size.get_call([TupleAcc(Var('r'), 2)])), Int(1))
+two_greater = Eq(Minus(size.get_call([TupleAcc(Var('r'), 2)]), size.get_call([TupleAcc(Var('r'), 1)])), Int(1))
+one_two_equal = Eq(Minus(size.get_call([TupleAcc(Var('r'), 1)]), size.get_call([TupleAcc(Var('r'), 2)])), Int(0))
+total_size = Eq(size.get_call(['lst']), Plus(size.get_call([TupleAcc(Var('r'), 1)]), size.get_call([TupleAcc(Var('r'), 2)])))
+size_diff = Or(Or(one_greater, two_greater), one_two_equal)
+
 split_spec = Choose(ChooseLHS('r', TTuple([LIST, LIST])),
-	Eq(content.get_call(['lst']),
-		StPlus(content.get_call([TupleAcc(Var('r'), 1)]), content.get_call([TupleAcc(Var('r'), 2)]))))
+    And(And(content_equal, size_diff), total_size))
 
 split0 = Harness('split', [LIST], TTuple([LIST, LIST]), ['lst'], split_spec,
 	Match(Var('lst'),

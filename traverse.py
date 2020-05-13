@@ -170,6 +170,7 @@ class Visitor():
         result_file = open("output_program.scala", "r")
         result_program = result_file.read()
         result_file.close()
+        quit()
         # at the highest level (harness), we probably want to write our string to a file too
         self.defined_functions.add(result_program)
 
