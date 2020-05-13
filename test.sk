@@ -1,0 +1,32 @@
+int sum([int n], int[n] l) {
+  if (n == 0) {
+    return ??;
+  }
+  if (n == 1) {
+    return l[??];
+  }
+  return l[??] + sum(l[1::n-1]);
+}
+
+// int sump([int n], int[n] l) {
+//   if (n == 0) {
+//     return ??;
+//   }
+//   if (n == 1) {
+//     return ??;
+//   }
+//   return l[??] + sum(l[??::n-1]);
+// }
+
+int callSum([int n], int[n] l) {
+  return sum(l);
+}
+
+harness void main() {
+  assert callSum({}) == 0;
+  assert callSum({5}) == 5;
+  assert callSum({1,2,3}) == 6;
+  // int result = sump(l);
+  // assert result == sum(l);
+  // return result;
+}
