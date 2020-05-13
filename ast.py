@@ -146,7 +146,6 @@ class Var(NonEmpty):
     def __str__(self):
         return self.name #+ " = " + str(self.value)
     def get_type(self, envt):
-        print("var name", self.name)
         return envt[self.name].get_type()
     # def get_type(self):
     #     return self.value.get_type()
@@ -368,7 +367,6 @@ class Match(NonEmpty):
     def get_type(self, envt = None):
         # I guess we're assuming that both branches in a match have the same type
         # I guess that's usually fine?
-        print("nil case ", self.nil_case)
         return self.nil_case.get_type(envt) # try this
         # return TArrow(self.match_on.get_type(envt), self.nil_case.get_type(envt))
     def get_node_type(self):

@@ -49,21 +49,27 @@ class Visitor():
         if node.get_node_type() == HOLE:
             hole_type = node.get_type()
             if not hole_type.is_func_type():
+                print("HOLE, NON FUNC")
                 # hole, not functional
                 # str(node) for a type seems buggy
+
                 return "def " + hole_name + "() : " + str(node) + " = {\n"
+            print("HOLE, FUNC")
             return "def " + hole_name + "(" + hole_type.get_function_arguments() + ") : " + str(hole_type.get_ret_type()) + " = {\n"
         if node.get_node_type() != FUNC:
+            print("NON HOLE, NON FUNC")
             # non hole, non functional
             # have to come up w/ args TODO
-            print("node str ", str(node))
             if node.get_node_type() != MATCH: # I think match is only special case
                 name_and_args = "def hole()"
             else:
                 # we only match on lists
+                print("match")
                 name_and_args = "def hole(" + str(node.get_match_on()) + " : List" + ")"
             return name_and_args + " : " + str(node.get_type(environment)) + " = {\n"
         # non hole, non functional
+        print("NON HOLE, NON FUNC")
+        # print(node.get_cons_case)
         return "def hole(" + node.get_function_arguments() + ") : " + str(node.get_func_type().get_ret_type()) + "= {\n"
 
     def get_choose_func_non_hole(self, node, outer_function, choose):
@@ -129,6 +135,7 @@ class Visitor():
         result_file.close()
 
     def call_leon(self, node, environment, outer_function, choose):
+        print("Leon call on node: ", node)
         leon_call = self.get_leon_call(node, environment, outer_function, choose)
         print("(nonharness) Going to call Leon with \n", leon_call)
         leon_call = self.add_tabs_body(leon_call)
@@ -147,6 +154,7 @@ class Visitor():
         result_file = open("output_program.scala", "r")
         result_program = result_file.read()
         result_file.close()
+        quit()
         # at the highest level (harness), we probably want to write our string to a file too
         return result_program # for now
     def on(self, node, can_call_leon = True, environment = {}, outer_function = None, choose = None):
@@ -201,20 +209,27 @@ class Visitor():
         if node.get_node_type() == NIL:
             return str(node)
         if node.get_node_type() == MATCH:
-            # TODO add cons case to other stuff? or nah... should never exist in the wild
             match_on = self.on(node.get_match_on(), can_call_leon = False, environment = environment, outer_function = outer_function, choose = choose)
             nil_case = self.on(node.get_nil_case(), can_call_leon = False, environment = environment, outer_function = outer_function, choose = choose)
             cons_case = self.on(node.get_cons_case().cons_case, can_call_leon = False, environment = environment, outer_function = outer_function, choose = choose)
-            if match_on != None and nil_case != None and cons_case != None:
-                result = match_on + " match {\n" + SCALA_TAB
-                result += "case Nil => " + nil_case + "\n" + SCALA_TAB
-                result += cons_case
-                result += "\n}"
-                return result
-            if not can_call_leon:
-                return None
-            return self.call_leon(node, environment, outer_function, choose)
-        # TODO set and set plus
+
+            if match_on == None or (nil_case == None and cons_case == None):
+                # if the thing we're matching on is a hole, have to call leon
+                # if both the cases are holes, have to be solved together, have to call leon
+                if not can_call_leon:
+                    return None
+                return self.call_leon(node, environment, outer_function, choose)
+            if nil_case == None:
+                nil_case = self.call_leon(node.get_nil_case(), environment, outer_function, choose)
+            if cons_case == None:
+                cons_case = self.call_leon(node.get_cons_case(), environment, outer_function, choose)
+
+            result = match_on + " match {\n" + SCALA_TAB
+            result += "case Nil => " + nil_case + "\n" + SCALA_TAB
+            result += cons_case
+            result += "\n}"
+            return result
+
         if node.get_node_type() == SET:
             new_vals = [self.on(val, can_call_leon, environment, outer_function) for val in node.get_vals()]
             if None not in new_vals:
@@ -269,18 +284,7 @@ class Visitor():
             if not can_call_leon:
                 return None
             return self.call_leon(node, environment, outer_function, choose)
-
-            # new_vals = [self.on(val, can_call_leon, environment, outer_function) for val in node.tuple.get_vals()]
-            # if None not in new_vals:
-            #     return "(" + list_str(new_vals) + ")" + '[' + str(node.get_idx()) + ']'
-            # if not can_call_leon:
-            #     return None
-            # return self.call_leon(node, environment, outer_function, choose)
-        if node.get_node_type() == choose:
-            # do I have to prune stuff here?
-            return str(node) # there's never any holes in an choose, right?
         if node.get_node_type() == HARNESS:
-            print("harness envt ", environment)
             new_body = self.on(node.get_body(), can_call_leon = True, environment = self.environment, outer_function = self.outer_function, choose = node.get_choose())
             input_program = "def " + node.get_name() + " (" + node.get_function_arguments() + ") " + ": "\
                 + str(node.ret_type) + ' = {\n' + node.add_tabs_body(new_body) + str(node.get_choose()) + "\n} "
