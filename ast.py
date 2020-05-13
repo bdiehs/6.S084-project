@@ -15,6 +15,7 @@ LIST = "LIST"
 CONS = "CONS"
 NIL = "NIL"
 MATCH = "MATCH"
+CONS_CASE = "CONS CASE"
 FUNC = "FUNCTION"
 CALL_FUNC = "CALL FUNCTION"
 FUNC_TYPE = "FUNC TYPE"
@@ -146,7 +147,7 @@ class Var(NonEmpty):
     def __str__(self):
         return self.name #+ " = " + str(self.value)
     def get_type(self, envt):
-        return envt[name].get_type()
+        return envt[self.name].get_type()
     # def get_type(self):
     #     return self.value.get_type()
     def prune(self, variables):
@@ -159,7 +160,7 @@ class Int(NonEmpty):
         self.value = value
     def __str__(self):
         return str(self.value)
-    def get_type(self, envt):
+    def get_type(self, envt = None):
         return INT
     def prune(self, variables):
         return self
@@ -184,7 +185,7 @@ class ArithmeticOperation(NonEmpty):
 class Plus(ArithmeticOperation):
     def __str__(self):
         return "(" + str(self.left) + ")" + " + " + "(" + str(self.right) + ")"
-    def get_type(self, envt):
+    def get_type(self, envt = None):
         return INT
     def get_node_type(self):
         return PLUS
@@ -192,7 +193,7 @@ class Plus(ArithmeticOperation):
 class Minus(ArithmeticOperation):
     def __str__(self):
         return "(" + str(self.left) + ")" + " - " + "(" + str(self.right) + ")"
-    def get_type(self, envt):
+    def get_type(self, envt = None):
         return INT
     def get_node_type(self):
         return MINUS
@@ -200,7 +201,7 @@ class Minus(ArithmeticOperation):
 class Lt(ArithmeticOperation):
     def __str__(self):
         return "(" + str(self.left) + ")" + " < " + "(" + str(self.right) + ")"
-    def get_type(self, envt):
+    def get_type(self, envt = None):
         return BOOL
     def get_node_type(self):
         return LT
@@ -208,7 +209,7 @@ class Lt(ArithmeticOperation):
 class Leq(ArithmeticOperation):
     def __str__(self):
         return "(" + str(self.left) + ")" + " <= " + "(" + str(self.right) + ")"
-    def get_type(self, envt):
+    def get_type(self, envt = None):
         return BOOL
     def get_node_type(self):
         return LEQ
@@ -216,7 +217,7 @@ class Leq(ArithmeticOperation):
 class Eq(ArithmeticOperation):
     def __str__(self):
         return "(" + str(self.left) + ")" + " == " + "(" + str(self.right) + ")"
-    def get_type(self, envt):
+    def get_type(self, envt = None):
         return BOOL
     def get_node_type(self):
         return EQ
@@ -226,7 +227,7 @@ class Bool(NonEmpty):
         self.value = value
     def __str__(self):
         return "true" if self.value else "false"
-    def get_type(self, envt):
+    def get_type(self, envt = None):
         return BOOL
     def prune(self, variables):
         return self
@@ -237,7 +238,7 @@ class TwoBooleanOperation(NonEmpty):
     def __init__(self, left, right):
         self.left = left
         self.right = right
-    def get_type(self, envt):
+    def get_type(self, envt = None):
         return BOOL
     def prune(self, variables):
         # remove lowest nodes using variables not in variables
@@ -267,7 +268,7 @@ class Not(NonEmpty):
         self.child = child
     def __str__(self):
         return "!" + "(" + str(self.child) + ")"
-    def get_type(self, envt):
+    def get_type(self, envt = None):
         return BOOL
     def get_child(self):
         return self.child
@@ -282,7 +283,7 @@ class Flse(NonEmpty):
         self.value = False
     def __str__(self):
         return "false"
-    def get_type(self, envt):
+    def get_type(self, envt = None):
         return BOOL
     def prune(self, variables):
         return self
@@ -294,7 +295,7 @@ class Tru(NonEmpty):
         self.value = True
     def __str__(self):
         return "true"
-    def get_type(self, envt):
+    def get_type(self, envt = None):
         return BOOL
     def prune(self, variables):
         return self
@@ -307,7 +308,7 @@ class Lst(NonEmpty):
         self.value = value # Cons or Nil
     def __str__(self):
         return str(self.value)
-    def get_type(self, envt):
+    def get_type(self, envt = None):
         return LIST
     def get_node_type(self):
         return LIST
@@ -322,7 +323,7 @@ class Cons(NonEmpty):
         return self.cdr
     def __str__(self):
         return "Cons(" + str(self.car) + ", " +  str(self.cdr) + ")"
-    def get_type(self, envt):
+    def get_type(self, envt = None):
         return LIST
     def get_node_type(self):
         return CONS
@@ -332,7 +333,7 @@ class Nil(NonEmpty):
         pass
     def __str__(self):
         return "Nil"
-    def get_type(self, envt):
+    def get_type(self, envt = None):
         return LIST
     def get_node_type(self):
         return NIL
@@ -342,8 +343,12 @@ class ConsCase(Cons):
         self.car_name = car_name
         self.cdr_name = cdr_name
         self.cons_case = cons_case
+    def get_cons_str(self):
+        return "Cons(" + self.car_name + ", " + self.cdr_name + ")"
     def __str__(self):
         return "case Cons(" + self.car_name + ", " + self.cdr_name + ") => \n" + SCALA_TAB*2 + str(self.cons_case)
+    def get_node_type(self):
+        return CONS_CASE
 
 class Match(NonEmpty):
     # I guess if the only thing we ever want to match on is lists, this is fine
@@ -364,8 +369,11 @@ class Match(NonEmpty):
         result += str(self.cons_case)
         result += "\n}"
         return result
-    def get_type(self, envt):
-        return TArrow(match_on.get_type(), nil_case.get_type())
+    def get_type(self, envt = None):
+        # I guess we're assuming that both branches in a match have the same type
+        # I guess that's usually fine?
+        return self.nil_case.get_type(envt) # try this
+        # return TArrow(self.match_on.get_type(envt), self.nil_case.get_type(envt))
     def get_node_type(self):
         return MATCH
 
@@ -389,7 +397,7 @@ class St(NonEmpty):
         self.vals = vals # Cons or Nil
     def __str__(self):
         return "Set(" + list_str(self.vals) + ")"
-    def get_type(self, envt):
+    def get_type(self, envt = None):
         return SET
     def get_node_type(self):
         return SET
@@ -402,7 +410,7 @@ class StPlus(NonEmpty):
         self.right = right
     def __str__(self):
         return "(" + str(self.left) + ")" + " ++ " + "(" + str(self.right) + ")"
-    def get_type(self, envt):
+    def get_type(self, envt = None):
         return SET
     def get_node_type(self):
         return SET_PLUS
@@ -483,7 +491,7 @@ class Func(NonEmpty):
         # also, shouldn't this get pretty printed the way scala expects it, like with scala types like List instead of LIST etc?
         # also self.body doesn't look right...
         return 'def ' + self.name + " (" + self.get_function_arguments() + ") " + ": " + str(self.func_type.get_ret_type()) + ' = {\n' + self.add_tabs_body(self.body) + "\n}"
-    def get_type(self, envt):
+    def get_type(self, envt = None):
         # return TArrow(self.var_types, ret_type)
         return self.func_type
     def get_call(self, variables):
@@ -502,7 +510,7 @@ class CallFunc(NonEmpty):
         return self.name + "(" + list_str(self.vars) + ")"
     def get_vars(self):
         return self.vars
-    def get_type(self, envt):
+    def get_type(self, envt = None):
         return TArrow(var_types, ret_type)
     def prune(self, variables):
         # if using variables not in variables, return empty
@@ -523,7 +531,7 @@ class App(NonEmpty):
         self.args = args
     def __str__(self):
         return str(self.func) + "(" + list_str(self.args) + ")"
-    def get_type(self, envt):
+    def get_type(self, envt = None):
         return self.func.get_type().to_
     def get_node_type(self):
         return APP
@@ -542,7 +550,7 @@ class LetIn(NonEmpty):
         return self.body
     def __str__(self):
         return 'val ' + self.var_name + ' = ' + str(self.val) + '\n' + str(self.body)
-    def get_type(self, envt):
+    def get_type(self, envt = None):
         return self.body.get_type(envt)
     def get_node_type(self):
         return LET_IN
@@ -554,7 +562,7 @@ class Tuple(NonEmpty):
         return self.vals
     def __str__(self):
         return "(" + list_str(self.vals) + ")"# might be types
-    def get_type(self, envt):
+    def get_type(self, envt = None):
         return TTuple([val.get_type() for val in self.vals])
     def get_node_type(self):
         return TUPLE
@@ -571,7 +579,7 @@ class TupleAcc(NonEmpty):
         return self.idx
     def __str__(self):
         return str(self.tuple) + "._" + str(self.idx)
-    def get_type(self, envt):
+    def get_type(self, envt = None):
         return self.tuple.get_type()[self.idx]
     def get_node_type(self):
         return TUPLE_ACC
@@ -687,7 +695,7 @@ class Harness(Func):
         #     self.ensuring.set_rhs(Tru())
         # else:
         #     self.ensuring.set_rhs(rhs_pruned)
-    def get_type(self, envt):
+    def get_type(self, envt = None):
         return self.func.get_type().to_
     def get_node_type(self):
         return HARNESS
