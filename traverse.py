@@ -234,7 +234,7 @@ class Visitor():
 
             result = match_on + " match {\n" + SCALA_TAB
             result += "case Nil => " + nil_case + "\n" + SCALA_TAB
-            result += cons_case
+            result += "case " + node.get_cons_case().get_cons_str() + " => " + cons_case
             result += "\n}"
             return result
 
@@ -280,7 +280,7 @@ class Visitor():
         if node.get_node_type() == TUPLE:
             new_vals = [self.on(val, can_call_leon, environment, outer_function) for val in node.get_vals()]
             if None not in new_vals:
-                return list_str(new_vals)
+                return "(" + list_str(new_vals) + ")"
             if not can_call_leon:
                 return None
             return self.call_leon(node, can_call_leon, environment, outer_function, choose)

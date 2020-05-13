@@ -343,8 +343,8 @@ class ConsCase(Cons):
         self.car_name = car_name
         self.cdr_name = cdr_name
         self.cons_case = cons_case
-    # def get_cons_str(self):
-    #     return "Cons(" + self.car_name + ", " + self.cdr_name + ")"
+    def get_cons_str(self):
+        return "Cons(" + self.car_name + ", " + self.cdr_name + ")"
     def __str__(self):
         return "case Cons(" + self.car_name + ", " + self.cdr_name + ") => \n" + SCALA_TAB*2 + str(self.cons_case)
     def get_node_type(self):
