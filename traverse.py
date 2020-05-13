@@ -33,6 +33,8 @@ class Visitor():
     def __init__(self, environment, outer_function):
         self.environment = environment
         self.outer_function = outer_function
+        self.defined_functions = set() # hackier way would be to just add to big string w/ newlines
+        # ideally would add content and size to this set
     def add_tabs_body(self, body):
         body_lines = str(body).split("\n")
         if len(body_lines) == 0:
@@ -53,9 +55,8 @@ class Visitor():
                 envt_lines += str(value) + '\n'
         return envt_lines
 
-    def get_func_str(self, node, environment, outer_function, choose, variable_name = None):
+    def get_func_str(self, node, environment, outer_function, choose, hole_name, variable_name = None):
         # returns function signature
-        hole_name = "hole" + str(next(HOLE_NUMBER_GEN))
         if node.get_node_type() == HOLE:
             hole_type = node.get_type()
             if not hole_type.is_func_type():
@@ -95,18 +96,11 @@ class Visitor():
                     new_choose = termination_measure.add_to_choose(new_choose, outer_vars[i], renamed_current_var)
             return new_choose
 
-    # TODO how to use other variables in the RHS of the choose?
-    def get_leon_call(self, node, environment, outer_function, choose, variable_name):
-        # TODO, execute bash script and read in from file
-        # this might've been a bad idea to send the node, here, now need to type check again? would change that
-        # need the signature (type of hole)
-        # need to do termination stuff
-        # need to apply the choose
-        # need to use the environment. need to build up lines of vals for that DONE
+    def get_leon_call(self, node, environment, outer_function, choose, hole_name, variable_name):
         leon_call = ""
         envt_lines = self._get_environment_lines(environment)
         leon_call += envt_lines # hopefully it's right for those to be outside the function?
-        func_str = self.get_func_str(node, environment, outer_function, choose, variable_name) # includes the "{" for now
+        func_str = self.get_func_str(node, environment, outer_function, choose, hole_name, variable_name) # includes the "{" for now
         leon_call += func_str
         # now just need to do choose. no body!
 
@@ -137,12 +131,15 @@ class Visitor():
         result_file.close()
 
     def call_leon(self, node, environment, outer_function, choose, variable_name = None):
+        # synthesizes a hole, adds function returning solution to that hole to the scope
+        # returns call to that hole
         print("Leon call on node: ", node)
-        leon_call = self.get_leon_call(node, environment, outer_function, choose, variable_name)
+        hole_name = "hole" + str(next(HOLE_NUMBER_GEN))
+        leon_call = self.get_leon_call(node, environment, outer_function, choose, hole_name, variable_name)
         print("(nonharness) Going to call Leon with \n", leon_call)
         leon_call = self.add_tabs_body(leon_call)
         leon_call = LEON_IMPORTS + DECLARE_OBJECT + DECLARE_LISTS + leon_call + CLOSE_OBJECT
-        # TODO actually run the script
+
         # have program string from leon_call
         # write that to a file
         # run the bash script which writes a program to file, read in from that file
@@ -157,8 +154,16 @@ class Visitor():
         result_program = result_file.read()
         result_file.close()
         # at the highest level (harness), we probably want to write our string to a file too
-        return result_program # for now
+        self.defined_functions.add(result_program)
+
+        if variable_name == None:
+            hole_call = hole_name + "()"
+        else:
+            hole_call = hole_name + "(" + variable_name + ")"
+        return hole_call
     def on(self, node, can_call_leon = True, environment = {}, outer_function = None, choose = None):
+        # accumulated holes is the environment of functions we've synthesized so far
+        # they should get put at the top of any new programs so they can get called
         print("on envt", environment)
         if node.get_node_type() == EMPTY:
             return str(node)
@@ -224,6 +229,8 @@ class Visitor():
                 nil_case = self.call_leon(node.get_nil_case(), environment, outer_function, choose, str(node.get_match_on()))
             if cons_case == None:
                 cons_case = self.call_leon(node.get_cons_case(), environment, outer_function, choose, str(node.get_match_on()))
+                print("defined functions", self.defined_functions)
+                print("cons case ", cons_case)
 
             result = match_on + " match {\n" + SCALA_TAB
             result += "case Nil => " + nil_case + "\n" + SCALA_TAB
