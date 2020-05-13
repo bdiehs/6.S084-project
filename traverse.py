@@ -18,6 +18,16 @@ SIZE = Func('size', FuncType([LIST], INT), ['lst'],
         SIZE_CONS_CASE)
 )
 
+def get_hole_number():
+    num = 0
+    while True:
+        yield num
+        num += 1
+
+HOLE_NUMBER_GEN = get_hole_number()
+
+
+
 class Visitor():
     # TODO might need to change strs of types
     def __init__(self, environment, outer_function):
@@ -45,22 +55,24 @@ class Visitor():
 
     def get_func_str(self, node, environment, outer_function, choose, variable_name = None):
         # returns function signature
+        hole_name = "hole" + str(next(HOLE_NUMBER_GEN))
         if node.get_node_type() == HOLE:
             hole_type = node.get_type()
             if not hole_type.is_func_type():
                 print("HOLE, NON FUNC")
                 # hole, not functional
                 # str(node) for a type seems buggy
+                # hole_name is going to throw an error
                 return "def " + hole_name + "() : " + str(node) + " = {\n"
             print("HOLE, FUNC")
             return "def " + hole_name + "(" + hole_type.get_function_arguments() + ") : " + str(hole_type.get_ret_type()) + " = {\n"
         if node.get_node_type() != FUNC:
             print("NON HOLE, NON FUNC")
             # non hole, non functional
-            return "def hole(" + variable_name + " : " + str(node.get_type())  + ")" + " : " + str(node.get_type(environment)) + " = {\n"
+            return "def " + hole_name + "(" + variable_name + " : " + str(node.get_type())  + ")" + " : " + str(node.get_type(environment)) + " = {\n"
         # non hole, functional
         print("NON HOLE, FUNC")
-        return "def hole(" + hole_type.get_function_arguments() + ") : " + str(node.get_func_type().get_ret_type()) + "= {\n"
+        return "def " + hole_name + "(" + hole_type.get_function_arguments() + ") : " + str(node.get_func_type().get_ret_type()) + "= {\n"
 
     def get_choose_func_non_hole(self, node, outer_function, choose):
         if outer_function == None or outer_function.get_name() != node.get_name():
@@ -144,7 +156,6 @@ class Visitor():
         result_file = open("output_program.scala", "r")
         result_program = result_file.read()
         result_file.close()
-        quit()
         # at the highest level (harness), we probably want to write our string to a file too
         return result_program # for now
     def on(self, node, can_call_leon = True, environment = {}, outer_function = None, choose = None):
@@ -279,6 +290,7 @@ class Visitor():
             input_program = "def " + node.get_name() + " (" + node.get_function_arguments() + ") " + ": "\
                 + str(node.ret_type) + ' = {\n' + node.add_tabs_body(new_body) + str(node.get_choose()) + "\n} "
             # TODO for harness, need to actually call leon!
+            # does not have environment
             return self.harness_call_leon(input_program)
         if node.get_node_type() == HOLE:
             # are we inside a recursive call? need to do measure stuff and pruning
