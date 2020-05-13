@@ -46,9 +46,10 @@ class Visitor():
         # ideally would add content and size to this set
 
     def _get_defined_functions_lines(self):
+        # must be tabbed
         lines = ""
         for defined_function in self.defined_functions:
-            lines += defined_function + "\n\n"
+            lines += self.add_tabs_body(defined_function) + "\n\n"
         return lines
 
     def add_tabs_body(self, body):
@@ -132,7 +133,7 @@ class Visitor():
     def harness_call_leon(self, input_program):
         # this is not SFB or RFC
         leon_call = input_program
-        print("(harness) Going to call Leon with\n", leon_call)
+        # print("(harness) Going to call Leon with\n", leon_call)
         leon_call = self.add_tabs_body(leon_call)
         leon_call = LEON_IMPORTS + DECLARE_OBJECT + DECLARE_LISTS + self._get_defined_functions_lines() + leon_call + CLOSE_OBJECT
 
