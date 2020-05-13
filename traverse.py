@@ -327,6 +327,79 @@ class Visitor():
                 return None
             return self.call_leon(node, environment, outer_function, choose)
 
+    def choose_subst(self, name_from, node_to, node):
+        if node.get_node_type() == VAR:
+            if node.name == name_from:
+                return node_to
+            else:
+                return choose
+        if node.get_node_type() == PLUS:
+            return Plus(self.choose_subst(name_from, node_to, node.get_left()), self.choose_subst(name_from, node_to, node.get_right()))
+        if node.get_node_type() == MINUS:
+            return Minus(self.choose_subst(name_from, node_to, node.get_left()), self.choose_subst(name_from, node_to, node.get_right()))
+        if node.get_node_type() == EQ:
+            return Eq(self.choose_subst(name_from, node_to, node.get_left()), self.choose_subst(name_from, node_to, node.get_right()))
+        if node.get_node_type() == LT:
+            return Lt(self.choose_subst(name_from, node_to, node.get_left()), self.choose_subst(name_from, node_to, node.get_right()))
+        if node.get_node_type() == LEQ:
+            return Leq(self.choose_subst(name_from, node_to, node.get_left()), self.choose_subst(name_from, node_to, node.get_right()))
+        if node.get_node_type() == AND:
+            return And(self.choose_subst(name_from, node_to, node.get_left()), self.choose_subst(name_from, node_to, node.get_right()))
+        if node.get_node_type() == OR:
+            return Or(self.choose_subst(name_from, node_to, node.get_left()), self.choose_subst(name_from, node_to, node.get_right()))
+        if node.get_node_type() == NOT:
+            return Not(self.choose_subst(name_from, node_to, node.get_child()))
+        if node.get_node_type() == CONS:
+            return Cons(self.choose_subst(name_from, node_to, node.get_car()), self.choose_subst(name_from, node_to, node.get_cdr()))
+        if node.get_node_type() == MATCH:
+            return Match(self.choose_subst(name_from, node_to, node.get_match_on()), self.choose_subst(name_from, node_to, node.get_nil_case()), self.choose_subst(name_from, node_to, node.get_cons_case()))
+        if node.get_node_type() == SET:
+            return Set([self.choose_subst(name_from, node_to, n) for n in node.get_vals()])
+        if node.get_node_type() == SETPLUS:
+            return StPlus(self.choose_subst(name_from, node_to, node.get_left()), self.choose_subst(name_from, node_to, node.get_right()))
+        if node.get_node_type() == FUNC:
+            # Not supposed to happen
+            return choose
+        if node.get_node_type() == CALL_FUNC:
+            return CallFunc(node.name, [self.choose_subst(name_from, node_to, n) for n in node.get_vals()], node.ret_type)
+        if node.get_node_type() == LET_IN:
+            return LetIn(node.get_var_name(), self.choose_subst(name_from, node_to, node.get_val()), self.choose_subst(name_from, node_to, node.get_body()))
+            return self.has_hole(node.get_val()) || self.has_hole(node.get_body())
+        if node.get_node_type() == TUPLE:
+            return Tuple([self.choose_subst(name_from, node_to, n) for n in node.get_vals()])
+        if node.get_node_type() == TUPLE_ACC:
+            return TupleAcc(self.choose_subst(name_from, node_to, node.get_tuple()), node.get_idx())
+        return node
+
+    def has_hole(self, node):
+        if node.get_node_type() == HOLE:
+            return True
+        if node.get_node_type() in ARITHMETIC_OPERATIONS:
+            return self.has_hole(node.get_left()) || self.has_hole(node.get_right())
+        if node.get_node_type() in TWO_BOOLEAN_OPERATIONS:
+            return self.has_hole(node.get_left()) || self.has_hole(node.get_right())
+        if node.get_node_type() == NOT:
+            return self.has_hole(node.get_child())
+        if node.get_node_type() == CONS:
+            return self.has_hole(node.get_car()) || self.has_hole(node.get_cdr())
+        if node.get_node_type() == MATCH:
+            return self.has_hole(node.get_match_on()) || self.has_hole(node.get_nil_case()) || self.has_hole(node.get_cons_case())
+        if node.get_node_type() == SET:
+            return any([self.has_hole(n) for n in node.get_vals()])
+        if node.get_node_type() == SET_PLUS:
+            return self.has_hole(node.get_left()) || self.has_hole(node.get_right())
+        if node.get_node_type() == FUNC:
+            return False
+        if node.get_node_type() == CALL_FUNC:
+            return any([self.has_hole(n) for n in node.get_args()])
+        if node.get_node_type() == LET_IN:
+            return self.has_hole(node.get_val()) || self.has_hole(node.get_body())
+        if node.get_node_type() == TUPLE:
+            return any([self.has_hole(n) for n in node.get_vals()])
+        if node.get_node_type() == TUPLE_ACC:
+            return self.has_hole(node.tuple)
+        return False
+
 if __name__ == '__main__':
     visitor = Visitor()
     # node = Hole(FuncType([INT], INT))
