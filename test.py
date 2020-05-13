@@ -18,21 +18,27 @@ content = Func('content', FuncType([LIST], SET) , ['lst'],
     )
 )
 
-
+# TODO change this to have size requirements
 split_spec = Choose(ChooseLHS('r', TTuple([LIST, LIST])),
 	Eq(content.get_call(['lst']),
 		StPlus(content.get_call([TupleAcc(Var('r'), 1)]), content.get_call([TupleAcc(Var('r'), 2)]))))
 
 split0 = Harness('split', [LIST], TTuple([LIST, LIST]), ['lst'], split_spec,
 	Match(Var('lst'),
-		nil_case = Tuple([Nil(), Nil()]),
+		nil_case = Tuple([Nil(), Nil()]), # right now this is not getting used
 		cons_case = ConsCase('h', 't', Match(Var('t'),
-			nil_case = Tuple([Nil(), Cons(Var('h'), Nil())]),
+			nil_case = Tuple([Nil(), Cons(Var('h'), Nil())]), # nor is this
 			cons_case = ConsCase('h2', 't2',
 				LetIn('v', CallFunc('split', [Hole(LIST)], TTuple([LIST, LIST])),
 				Tuple([Cons(Var('h1'), TupleAcc(Var('r'), 1)), Cons(Var('h2'), TupleAcc(Var('r'), 1))])
 				))
 		))
+	))
+
+splitConsCase = Harness('split', [LIST], TTuple([LIST, LIST]), ['lst'], split_spec,
+	Match(Var('lst'),
+		nil_case = Tuple([Nil(), Nil()]), # right now this is not getting used
+		cons_case = ConsCase('h', 't', Hole(TTuple([LIST, LIST])))
 	))
 
 splitf = Func('split', FuncType([LIST], TTuple([LIST, LIST])), ['lst'],
@@ -52,23 +58,22 @@ splitf = Func('split', FuncType([LIST], TTuple([LIST, LIST])), ['lst'],
 # harness =  Harness("split", [LIST], INT, ["lst_B"], old_choose, Tru())
 
 def test_traverse():
-	visitor = Visitor()
 
-
-	result = split0.accept(visitor)
-	environment = {'size': size, 'content': content}
-	outer_function = None
-	call = visitor.call_leon(splitf, environment, outer_function, split_spec)
-    # environment = {"x" : Int(0)}
-	# outer_function = None
-	# call = visitor.call_leon(node, environment, outer_function, split_spec)
-	# print(call)
-	# environment = {"x" : Int(0)} # environment works!
-    # environment = {}
-    # outer_function = None
-    # choose = Choose(ChooseLHS("res", INT), Tru()) # want to say res = input * 2
-    # call = visitor.call_leon(node, environment, outer_function, choose)
-	print(call)
+    environment = {'size': size, 'content': content}
+    outer_function = None
+    visitor = Visitor(environment, outer_function)
+    splitConsCase.accept(visitor) # this should be a harness
+	# #call = visitor.call_leon(splitf, environment, outer_function, split_spec)
+    # # environment = {"x" : Int(0)}
+	# # outer_function = None
+	# # call = visitor.call_leon(node, environment, outer_function, split_spec)
+	# # print(call)
+	# # environment = {"x" : Int(0)} # environment works!
+    # # environment = {}
+    # # outer_function = None
+    # # choose = Choose(ChooseLHS("res", INT), Tru()) # want to say res = input * 2
+    # # call = visitor.call_leon(node, environment, outer_function, choose)
+    # print(call)
 
 
 

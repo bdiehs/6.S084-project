@@ -19,8 +19,10 @@ SIZE = Func('size', FuncType([LIST], INT), ['lst'],
 )
 
 class Visitor():
-    # needs on for each type of node
     # TODO might need to change strs of types
+    def __init__(self, environment, outer_function):
+        self.environment = environment
+        self.outer_function = outer_function
     def add_tabs_body(self, body):
         body_lines = str(body).split("\n")
         if len(body_lines) == 0:
@@ -52,18 +54,56 @@ class Visitor():
         leon_call += function_str
         leon_call += SPACE + str(choose)
         leon_call += "\n}"
-        # leon_call += SPACE + str(choose) # node.get_choose().prune() ?? shouldn't be needed here
         return leon_call
+    def get_func_str(self, node, environment, outer_function, choose):
+        # returns function signature
+        # choose stuff and termination stuff
+        if node.get_node_type() == HOLE:
+            hole_type = node.get_type()
+            if not hole_type.is_func_type():
+                # hole, not functional
+                # str(node) for a type seems buggy
+                return "def " + hole_name + "() : " + str(node) + " = {\n"
+            return "def " + hole_name + "(" + hole_type.get_function_arguments() + ") : " + str(hole_type.get_ret_type()) + " = {\n"
+        if node.get_node_type() != FUNC:
+            # non hole, non functional
+            # have to come up w/ args TODO
+            return "def hole()  : " + str(node.get_type(environment)) + " = {\n"
+        # non hole, non functional
+        return "def hole(" + node.get_function_arguments() + ") : " + str(node.get_func_type().get_ret_type()) + "= {\n"
+
+
+
+    def get_choose_func_non_hole(self, node, outer_function, choose):
+        if outer_function == None or outer_function.get_name() != node.get_name():
+            return str(choose.prune())
+        else:
+            new_choose = node.get_choose().prune()
+            # termination measure is if any of the args is a list, it needs to be smaller
+            # need to change names
+            current_vars = node.get_vars()
+            current_var_types = node.get_func_type().get_var_types()
+            outer_vars = outer_function.get_vars()
+            outer_var_types = outer_function.get_func_type().get_var_types()
+
+            new_choose = choose
+            for i in range(len(current_var_types)):
+                if current_var_types[i] == LIST:
+                    renamed_current_var = current_vars[i] + "'" # make it prime
+                    measure = Lt(SIZE(renamed_current_var), SIZE(outer_vars[i]))
+                    termination_measure = TerminationMeasure(SIZE)
+                    new_choose = termination_measure.add_to_choose(new_choose, outer_vars[i], renamed_current_var)
+            return new_choose
 
     def get_leon_call_func_non_hole(self, node, environment, outer_function, choose):
+        # why are we calling Leon for this?
         print("FUNC NON HOLE")
         # TODO separate thing for a hole func. need to come up with variable names
         leon_call = ""
-
         envt_lines = self._get_environment_lines(environment)
         leon_call += envt_lines # hopefully it's right for those to be outside the function?
         function_str = "def hole(" + node.get_function_arguments() + ") : " + str(node.get_func_type().get_ret_type()) + "= {\n"
-        if  outer_function == None or outer_function.get_name() != node.get_name():
+        if outer_function == None or outer_function.get_name() != node.get_name():
             function_str += str(choose.prune())
             function_str += "\n}\n"
         else:
@@ -116,30 +156,22 @@ class Visitor():
         leon_call = ""
         envt_lines = self._get_environment_lines(environment)
         leon_call += envt_lines # hopefully it's right for those to be outside the function?
+        func_str = self.get_func_str(node, environment, outer_function, choose) # includes the "{" for now
+        leon_call += func_str
+        # now just need to do choose. no body!
 
-        # choose stuff and termination stuff
-        if node.get_node_type() == HOLE:
-            hole_type = node.get_type()
-            if not hole_type.is_func_type():
-            # if hole_type.get_node_type() != FUNC_TYPE:
-                return self.get_leon_call_non_func(node.name, hole_type, environment, choose)
-            else:
-                # function inside hole. last case to figure out!
-                return self.get_leon_call_hole_func(node.name, hole_type, environment, outer_function, choose)
+        if node.get_type() == HOLE or node.get_node_type() != FUNC:
+            choose_str = str(choose.prune())
         else:
-            # non hole.
-            if node.get_node_type() != FUNC:
-                # TODO figure out environment stuff??/
-                function_str = "def hole() : " + str(node.get_type(environment)) + " = {\n}"
-                leon_call += function_str
-                leon_call += SPACE + str(choose)
-                return leon_call
-            else:
-                return self.get_leon_call_func_non_hole(node, environment, outer_function, choose)
+            # complicated choose
+            choose_str = get_choose_func_non_hole(self, node, outer_function, choose)
+        leon_call += choose_str
+        leon_call += "\n}\n"
 
     def harness_call_leon(self, input_program):
         # this is not SFB or RFC
         leon_call = input_program
+        print("(harness) Going to call Leon with\n", leon_call)
         leon_call = self.add_tabs_body(leon_call)
         leon_call = LEON_IMPORTS + DECLARE_OBJECT + DECLARE_LISTS + leon_call + CLOSE_OBJECT
 
@@ -155,6 +187,7 @@ class Visitor():
 
     def call_leon(self, node, environment, outer_function, choose):
         leon_call = self.get_leon_call(node, environment, outer_function, choose)
+        print("(nonharness) Going to call Leon with \n", leon_call)
         leon_call = self.add_tabs_body(leon_call)
         leon_call = LEON_IMPORTS + DECLARE_OBJECT + DECLARE_LISTS + leon_call + CLOSE_OBJECT
         # TODO actually run the script
@@ -174,6 +207,7 @@ class Visitor():
         # at the highest level (harness), we probably want to write our string to a file too
         return result_program # for now
     def on(self, node, can_call_leon = True, environment = {}, outer_function = None, choose = None):
+        print("on envt", environment)
         if node.get_node_type() == EMPTY:
             return str(node)
         if node.get_node_type() == VAR:
@@ -288,7 +322,7 @@ class Visitor():
             # do we need everything in the tuple to be resolvable? probably.
             new_val = self.on(node.tuple, can_call_leon, environment, outer_function)
             if new_val != None:
-                return "(" + str(new_val) + ")" + '[' + str(node.get_idx()) + ']'
+                return "(" + str(new_val) + ")" + '._' + str(node.get_idx())
             if not can_call_leon:
                 return None
             return self.call_leon(node, environment, outer_function, choose)
@@ -303,7 +337,8 @@ class Visitor():
             # do I have to prune stuff here?
             return str(node) # there's never any holes in an choose, right?
         if node.get_node_type() == HARNESS:
-            new_body = self.on(node.get_body(), can_call_leon = True, environment = {}, outer_function = None, choose = node.get_choose())
+            print("harness envt ", environment)
+            new_body = self.on(node.get_body(), can_call_leon = True, environment = self.environment, outer_function = self.outer_function, choose = node.get_choose())
             input_program = "def " + node.get_name() + " (" + node.get_function_arguments() + ") " + ": "\
                 + str(node.ret_type) + ' = {\n' + node.add_tabs_body(new_body) + str(node.get_choose()) + "\n} "
             # TODO for harness, need to actually call leon!
