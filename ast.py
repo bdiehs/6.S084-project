@@ -15,6 +15,7 @@ LIST = "LIST"
 CONS = "CONS"
 NIL = "NIL"
 MATCH = "MATCH"
+CONS_CASE = "CONS CASE"
 FUNC = "FUNCTION"
 CALL_FUNC = "CALL FUNCTION"
 FUNC_TYPE = "FUNC TYPE"
@@ -342,8 +343,12 @@ class ConsCase(Cons):
         self.car_name = car_name
         self.cdr_name = cdr_name
         self.cons_case = cons_case
+    # def get_cons_str(self):
+    #     return "Cons(" + self.car_name + ", " + self.cdr_name + ")"
     def __str__(self):
         return "case Cons(" + self.car_name + ", " + self.cdr_name + ") => \n" + SCALA_TAB*2 + str(self.cons_case)
+    def get_node_type(self):
+        return CONS_CASE
 
 class Match(NonEmpty):
     # I guess if the only thing we ever want to match on is lists, this is fine

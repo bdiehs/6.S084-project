@@ -43,34 +43,41 @@ class Visitor():
                 envt_lines += str(value) + '\n'
         return envt_lines
 
-    def get_func_str(self, node, environment, outer_function, choose):
+    def get_func_str(self, node, environment, outer_function, choose, variable_name = None):
         # returns function signature
-        # choose stuff and termination stuff
         if node.get_node_type() == HOLE:
             hole_type = node.get_type()
             if not hole_type.is_func_type():
                 print("HOLE, NON FUNC")
                 # hole, not functional
                 # str(node) for a type seems buggy
-
                 return "def " + hole_name + "() : " + str(node) + " = {\n"
             print("HOLE, FUNC")
             return "def " + hole_name + "(" + hole_type.get_function_arguments() + ") : " + str(hole_type.get_ret_type()) + " = {\n"
         if node.get_node_type() != FUNC:
+            # need variable name
             print("NON HOLE, NON FUNC")
             # non hole, non functional
             # have to come up w/ args TODO
             if node.get_node_type() != MATCH: # I think match is only special case
+                print("not match, simple")
                 name_and_args = "def hole()"
             else:
                 # we only match on lists
-                print("match")
+                print("MATCH")
                 name_and_args = "def hole(" + str(node.get_match_on()) + " : List" + ")"
-            return name_and_args + " : " + str(node.get_type(environment)) + " = {\n"
+            return "def hole(" + variable_name + " : " + str(node.get_type())  + ")" + " : " + str(node.get_type(environment)) + " = {\n"
         # non hole, non functional
-        print("NON HOLE, NON FUNC")
+        print("NON HOLE, FUNC")
         # print(node.get_cons_case)
-        return "def hole(" + node.get_function_arguments() + ") : " + str(node.get_func_type().get_ret_type()) + "= {\n"
+        # I think it must be Nil or ConsCase here
+        print("node type " + str(node.get_node_type()))
+        print("below attempt to print")
+        if node.get_node_type() == CONS_CASE:
+            arg_str = "cons : List" # I think you can't specify it's a cons?
+        else:
+            arg_str = "nil : List" # TODO try making this nil?
+        return "def hole(" + arg_str + ") : " + str(node.get_func_type().get_ret_type()) + "= {\n"
 
     def get_choose_func_non_hole(self, node, outer_function, choose):
         if outer_function == None or outer_function.get_name() != node.get_name():
@@ -94,7 +101,7 @@ class Visitor():
             return new_choose
 
     # TODO how to use other variables in the RHS of the choose?
-    def get_leon_call(self, node, environment, outer_function, choose):
+    def get_leon_call(self, node, environment, outer_function, choose, variable_name):
         # TODO, execute bash script and read in from file
         # this might've been a bad idea to send the node, here, now need to type check again? would change that
         # need the signature (type of hole)
@@ -104,7 +111,7 @@ class Visitor():
         leon_call = ""
         envt_lines = self._get_environment_lines(environment)
         leon_call += envt_lines # hopefully it's right for those to be outside the function?
-        func_str = self.get_func_str(node, environment, outer_function, choose) # includes the "{" for now
+        func_str = self.get_func_str(node, environment, outer_function, choose, variable_name) # includes the "{" for now
         leon_call += func_str
         # now just need to do choose. no body!
 
@@ -134,9 +141,9 @@ class Visitor():
         result_program = result_file.read()
         result_file.close()
 
-    def call_leon(self, node, environment, outer_function, choose):
+    def call_leon(self, node, environment, outer_function, choose, variable_name = None):
         print("Leon call on node: ", node)
-        leon_call = self.get_leon_call(node, environment, outer_function, choose)
+        leon_call = self.get_leon_call(node, environment, outer_function, choose, variable_name)
         print("(nonharness) Going to call Leon with \n", leon_call)
         leon_call = self.add_tabs_body(leon_call)
         leon_call = LEON_IMPORTS + DECLARE_OBJECT + DECLARE_LISTS + leon_call + CLOSE_OBJECT
@@ -218,11 +225,11 @@ class Visitor():
                 # if both the cases are holes, have to be solved together, have to call leon
                 if not can_call_leon:
                     return None
-                return self.call_leon(node, environment, outer_function, choose)
+                return self.call_leon(node, environment, outer_function, choose, str(node.get_match_on()))
             if nil_case == None:
-                nil_case = self.call_leon(node.get_nil_case(), environment, outer_function, choose)
+                nil_case = self.call_leon(node.get_nil_case(), environment, outer_function, choose, str(node.get_match_on()))
             if cons_case == None:
-                cons_case = self.call_leon(node.get_cons_case(), environment, outer_function, choose)
+                cons_case = self.call_leon(node.get_cons_case(), environment, outer_function, choose, str(node.get_match_on()))
 
             result = match_on + " match {\n" + SCALA_TAB
             result += "case Nil => " + nil_case + "\n" + SCALA_TAB
